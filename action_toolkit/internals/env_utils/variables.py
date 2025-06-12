@@ -1,9 +1,11 @@
 
 
-from collections.abc import Mapping, Callable
+from calendar import c
+from collections.abc import Generator, Mapping, Callable
+import contextlib
 import os
 import pprint
-from typing import Any, overload, TypeVar
+from typing import Any, ContextManager, overload, TypeVar
 from .type_parsing import _HANDLERS, _TypeHandler
 
 T = TypeVar('T')
@@ -130,6 +132,57 @@ class EnvironmentVariables:
             if auto_error and default is None:
                 raise ValueError(f"EnvironmentVariablesError: {full} cannot cast to {cast_to}") from exc
             return default
+
+    @classmethod
+    def iter_prefix(cls, prefix: str, *, environ: Mapping[str, str] | None = None) -> Generator[tuple[str, str], None, None]:
+        '''Yields environment variables that start with a given prefix.
+
+        Parameters
+        ----------
+        prefix : str
+            _the prefix to filter by_
+        environ : Mapping[str, str] | None, optional
+            _a preloaded environment mapping_, by default None which then uses os.environ
+
+        Yields
+        ------
+        Generator[tuple[str, str], None, None]
+            _description_
+        '''
+        environ = environ or os.environ
+
+        for key in filter(lambda k: k.startswith(prefix), environ.keys()):
+            yield key, environ[key]
+
+    @contextlib.contextmanager
+    @classmethod
+    def prefixed(
+        cls,
+        prefix: str,
+        *,
+        environ: Mapping[str, str] | None = None
+    ) -> Generator['EnvironmentVariables', None, None]:
+        '''Context manager to create a new EnvironmentVariables instance with a prefix.
+
+        Parameters
+        ----------
+        prefix : str
+            _the prefix to use for the new instance_
+
+        Yields
+        ------
+        Generator[EnvironmentVariables, None, None]
+            _a new EnvironmentVariables instance with the given prefix_
+        '''
+        try:
+            yield cls(
+                env=environ,
+                prefix=prefix
+            )
+        finally:
+            pass
+
+
 
     @classmethod
     def export_env(

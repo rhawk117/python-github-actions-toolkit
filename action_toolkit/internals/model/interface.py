@@ -6,7 +6,7 @@ from dataclasses import dataclass, fields, asdict, replace
 from typing import Any, Self, TypeVar, ClassVar
 
 from .options import ModelConfig
-
+from pydantic import BaseModel
 
 # error for custom exception later
 def use_alias_when_not_defined_err() -> str:
@@ -23,30 +23,11 @@ def attr_doesnt_exist_err(attr_name: str) -> str:
     )
 
 
-class ModelInterfaceMeta(type):
-    '''Metaclass that automatically applies dataclass decorator with configuration.'''
 
-    def __new__(mcs, name, bases, namespace, **kwargs):
-        cls = super().__new__(mcs, name, bases, namespace)
-
-        if (name != 'ModelInterface' and bases
-            and any(
-                issubclass(base, ModelInterface)
-                for base in bases if hasattr(base, '__mro__')
-            )
-        ):
-            config = getattr(cls, 'model_config', ModelConfig())
-
-            dataclass_options = getattr(config, 'dataclass_override', {})
-
-            cls = dataclass(**dataclass_options)(cls)
-
-        return cls
 
 
 T = TypeVar('T', bound='ModelInterface')
 
-@dataclass
 class ModelInterface(metaclass=ModelInterfaceMeta):
     '''An Enhanced dataclass wrapper with comprehensive configuration support and
     extensive built in utility for for data manipulation, serialization,
@@ -110,8 +91,7 @@ class ModelInterface(metaclass=ModelInterfaceMeta):
             data -- dictionary of key word arguments to use for the instance
 
         Keyword Arguments:
-            strict -- _description_ (default: {False}): forbids extra keys in
-            the data dict
+            strict -- forbids extra keys in the data dict (default: {False}):
 
         Raises:
             TypeError: if strict is True and the data dict contains keys that are not
