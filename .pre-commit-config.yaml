@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.5.0
+    hooks:
+      - id: ruff
+        args:
+          - '--config'
+          - '.ruff.toml'
+          - '--fix'
+          - '--unsafe-fixes'
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.7.3
+    hooks:
+      - id: uv-lock
+      - id: uv-export
+        args:
+          - '-o'
+          - 'requirements.txt'
+          - '--no-hashes'

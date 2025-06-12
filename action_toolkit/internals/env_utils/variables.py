@@ -1,5 +1,3 @@
-
-
 from calendar import c
 from collections.abc import Generator, Mapping, Callable
 import contextlib
@@ -10,12 +8,9 @@ from .type_parsing import _HANDLERS, _TypeHandler
 
 T = TypeVar('T')
 
-def add_type_handler(
-    type_: type[T],
-    parse: Callable[[str], T],
-    serialize: Callable[[T], str]
-) -> None:
-    '''Adds a custom type handler for parsing and serializing values
+
+def add_type_handler(type_: type[T], parse: Callable[[str], T], serialize: Callable[[T], str]) -> None:
+    """Adds a custom type handler for parsing and serializing values
 
     Parameters
     ----------
@@ -25,11 +20,12 @@ def add_type_handler(
         _the function called to parse the string into the input type_
     serialize : Callable[[T], str]
         _the function to turn the value into a string_
-    '''
+    """
     _HANDLERS[type_] = _TypeHandler(parse, serialize)
 
+
 def get_type_handler(type_: type[T]) -> _TypeHandler[T]:
-    '''Returns the handler for the given type, or raises KeyError if not found.
+    """Returns the handler for the given type, or raises KeyError if not found.
     should never be used externally unless debugging.
     Parameters
     ----------
@@ -45,24 +41,20 @@ def get_type_handler(type_: type[T]) -> _TypeHandler[T]:
     ------
     KeyError
         _if a key for the type does not exist_
-    '''
+    """
     handler = _HANDLERS.get(type_)
     if handler is None:
-        raise KeyError(f"CodecsError: No handler registered for type {type_.__name__}")
+        raise KeyError(f'CodecsError: No handler registered for type {type_.__name__}')
     return handler
 
 
 class EnvironmentVariables:
-    '''A wrapper for environment variables that allows for type casting
+    """A wrapper for environment variables that allows for type casting
     and prefixing keys, implemented instead of python-dotenv to avoid
     using external dependencies.
-    '''
-    def __init__(
-        self,
-        *,
-        env: Mapping[str, str] | None = None,
-        prefix: str = ""
-    ) -> None:
+    """
+
+    def __init__(self, *, env: Mapping[str, str] | None = None, prefix: str = '') -> None:
         self._env: Mapping[str, str] = dict(env or os.environ)
         self._prefix: str = prefix
 
@@ -94,7 +86,7 @@ class EnvironmentVariables:
         default: Any = None,
         auto_error: bool = True,
     ) -> T | None:
-        '''Retrieves an environment variable by key, with optional type casting,
+        """Retrieves an environment variable by key, with optional type casting,
 
         Parameters
         ----------
@@ -118,24 +110,26 @@ class EnvironmentVariables:
             _the key doesnt exist_
         ValueError
             _the type conversion fails_
-        '''
-        full = f"{self._prefix}{key}"
+        """
+        full = f'{self._prefix}{key}'
         raw = self._env.get(full)
         if raw is None:
             if auto_error and default is None:
-                raise KeyError(f"{full} not set")
+                raise KeyError(f'{full} not set')
             return default
         try:
             codec = get_type_handler(cast_to)
             return codec.parse(raw)
         except Exception as exc:
             if auto_error and default is None:
-                raise ValueError(f"EnvironmentVariablesError: {full} cannot cast to {cast_to}") from exc
+                raise ValueError(f'EnvironmentVariablesError: {full} cannot cast to {cast_to}') from exc
             return default
 
     @classmethod
-    def iter_prefix(cls, prefix: str, *, environ: Mapping[str, str] | None = None) -> Generator[tuple[str, str], None, None]:
-        '''Yields environment variables that start with a given prefix.
+    def iter_prefix(
+        cls, prefix: str, *, environ: Mapping[str, str] | None = None
+    ) -> Generator[tuple[str, str], None, None]:
+        """Yields environment variables that start with a given prefix.
 
         Parameters
         ----------
@@ -148,7 +142,7 @@ class EnvironmentVariables:
         ------
         Generator[tuple[str, str], None, None]
             _description_
-        '''
+        """
         environ = environ or os.environ
 
         for key in filter(lambda k: k.startswith(prefix), environ.keys()):
@@ -157,12 +151,9 @@ class EnvironmentVariables:
     @contextlib.contextmanager
     @classmethod
     def prefixed(
-        cls,
-        prefix: str,
-        *,
-        environ: Mapping[str, str] | None = None
+        cls, prefix: str, *, environ: Mapping[str, str] | None = None
     ) -> Generator['EnvironmentVariables', None, None]:
-        '''Context manager to create a new EnvironmentVariables instance with a prefix.
+        """Context manager to create a new EnvironmentVariables instance with a prefix.
 
         Parameters
         ----------
@@ -173,26 +164,15 @@ class EnvironmentVariables:
         ------
         Generator[EnvironmentVariables, None, None]
             _a new EnvironmentVariables instance with the given prefix_
-        '''
+        """
         try:
-            yield cls(
-                env=environ,
-                prefix=prefix
-            )
+            yield cls(env=environ, prefix=prefix)
         finally:
             pass
 
-
-
     @classmethod
-    def export_env(
-        cls,
-        env_file: str,
-        *,
-        env_vars: Mapping[str, Any],
-        prefix: str = ""
-    ) -> None:
-        '''Export environment variables to a file given a mapping of variables
+    def export_env(cls, env_file: str, *, env_vars: Mapping[str, Any], prefix: str = '') -> None:
+        """Export environment variables to a file given a mapping of variables
         and an optional prefix to add to each key in the mapping.
 
         Parameters
@@ -203,18 +183,18 @@ class EnvironmentVariables:
             _the mapping of variables_
         prefix : str, optional
             _description_, by default ""
-        '''
+        """
         exported = []
         for key, value in env_vars.items():
-            full_key = f"{prefix}{key}"
+            full_key = f'{prefix}{key}'
             if isinstance(value, str):
-                exported.append(f"{full_key}={value}")
+                exported.append(f'{full_key}={value}')
             else:
                 codec = get_type_handler(type(value))
-                exported.append(f"{full_key}={codec.serialize(value)}")
+                exported.append(f'{full_key}={codec.serialize(value)}')
 
         with open(env_file, mode='a') as f:
-            f.write("\n".join(exported) + "\n")
+            f.write('\n'.join(exported) + '\n')
 
     @classmethod
     def pprint(
@@ -224,7 +204,7 @@ class EnvironmentVariables:
         indent: int = 2,
         env_prefix: str | None = None,
     ) -> None:
-        '''Prints the environment variables in a pretty format.
+        """Prints the environment variables in a pretty format.
 
         Parameters
         ----------
@@ -234,13 +214,8 @@ class EnvironmentVariables:
             _the indentation level_, by default 2
         env_prefix : str | None, optional
             _the prefix to add to each key_, by default None
-        '''
+        """
         env = env or os.environ
-        prefix = env_prefix or ""
+        prefix = env_prefix or ''
         for key, value in sorted(env.items()):
-            pprint.pprint(
-                {f"{prefix}{key}": value},
-                indent=indent,
-                width=80,
-                compact=True
-            )
+            pprint.pprint({f'{prefix}{key}': value}, indent=indent, width=80, compact=True)

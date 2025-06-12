@@ -1,8 +1,6 @@
-
-
 def main():
-    print("Hello from python-github-actions-toolkit!")
+    print('Hello from python-github-actions-toolkit!')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

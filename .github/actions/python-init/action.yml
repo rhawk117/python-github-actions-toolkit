@@ -1,0 +1,106 @@
+name: Initialize Python & UV
+description: |
+  Checks out repository and sets up Python environment with UV
+  and caches dependencies, not you must checkout first
+
+inputs:
+  install-dev:
+    description: Install development dependencies, defaults to false
+    required: false
+    default: 'false'
+
+  install-all:
+    description: Install all dependencies including dev, defaults to false
+    required: false
+    default: 'false'
+
+  sync-locked:
+    description: Sync locked dependencies, defaults to true
+    required: false
+    default: 'true'
+
+  uv-version:
+    description: Version of UV to use, not required
+    required: false
+    default: '0.7.12'
+
+  enable-cache:
+    description: Enable caching of dependencies, defaults to true
+    required: false
+    default: 'true'
+
+  cache-glob:
+    description: Glob pattern for caching dependencies (uv.lock), not required
+    required: false
+    default: 'uv.lock'
+
+  runner-self-hosted:
+    description: Whether the runner is self-hosted, defaults to false
+    required: false
+    default: 'false'
+
+  show-packages:
+    description: Whether to display installed packages, defaults to true
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    # - name: Configure Cache Location
+    #   id: cache-conf
+    #   shell: bash
+    #   run: |
+    #     if [[ "${{ inputs.runner-self-hosted }}" == "true" ]]; then
+    #       echo "::debug::Using self-hosted runner, setting cache directory"
+    #       cache_dir="${{ github.workspace }}/.uv/cache"
+    #       echo "UV_CACHE_DIR=$cache_dir" >> $GITHUB_ENV
+    #       echo "cache_location=$cache_dir" >> $GITHUB_OUTPUT
+    #     else
+    #       echo "::debug::Using GitHub-hosted runner, setting cache directory"
+    #       echo "cache_location=default" >> $GITHUB_OUTPUTs
+    #     fi
+
+    - name: Display .python-version and Action Inputs
+      id: get-py-version
+      shell: bash
+      run: |
+        PYTHON_VERSION=$( < .python-version )
+        echo "::group:: Display Python Version and Action Inputs"
+        echo "::info:: Python Version: ${PYTHON_VERSION}"
+        echo "::info:: UV Version: ${{ inputs.uv-version }}"
+        echo "::endgroup::"
+
+        echo "::group::Action Inputs"
+        echo "::info:: Enable Cache: ${{ inputs.enable-cache }}"
+        echo "::info:: Cache Glob: ${{ inputs.cache-glob }}"
+        echo "::info:: Install Dev Dependencies: ${{ inputs.install-dev }}"
+        echo "::info:: Sync Locked Dependencies: ${{ inputs.sync-locked }}"
+        echo "::endgroup::"
+
+        echo "python_version=${PYTHON_VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Install UV
+      id: uv-install
+      uses: astral-sh/uv-action@5
+      with:
+        version: ${{ inputs.uv-version }}
+        enable-cache: ${{ inputs.enable-cache }}
+        cache-dependency-glob: 'uv.lock'
+
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ steps.get-py-version.outputs.python_version }}
+
+    - name: Install dependencies
+      id: install-deps
+      shell: bash
+      env:
+        SYNC_LOCKED: ${{ inputs.sync-locked }}
+        INSTALL_DEV: ${{ inputs.install-dev }}
+        INSTALL_ALL: ${{ inputs.install-all }}
+        SHOW_PACKAGES: ${{ inputs.show-packages }}
+      run: |
+        chmod +x .github/scripts/python-init/sync_uv.sh
+        ./.github/scripts/python-init/sync_uv.sh

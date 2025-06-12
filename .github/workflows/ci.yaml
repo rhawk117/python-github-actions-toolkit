@@ -1,0 +1,31 @@
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - '**.json'
+  workflow_dispatch:
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup UV & Python
+        uses: ./.github/actions/python-init
+        with:
+          install-dev: 'true'
+
+      - name: Run
+        run: |
+          echo "::debug::Running code quality checks"
+
+          echo "::group::Ruff Output"
+          uvx ruff --force-exclude --config .ruff.toml --fix --unsafe-fixes
+          uvx ruff format --force-exclude
+          echo "::endgroup::"
+
+          echo "::notice::Formating and linting complete"
+

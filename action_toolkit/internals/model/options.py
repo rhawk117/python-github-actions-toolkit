@@ -6,7 +6,8 @@ from typing import Any, TypedDict
 
 
 class DataclassInit(TypedDict, total=False):
-    '''typed dictionary for the dataclass decorator options.'''
+    """typed dictionary for the dataclass decorator options."""
+
     init: bool
     repr: bool
     eq: bool
@@ -18,10 +19,8 @@ class DataclassInit(TypedDict, total=False):
     slots: bool
 
 
-
-
 class ModelConfig:
-    '''An configuration class for customizing and overriding the default
+    """An configuration class for customizing and overriding the default
     behavior of a model interface.
 
     Attributes
@@ -67,7 +66,8 @@ class ModelConfig:
             ModelInfterface class itself, but you can use to create and define custom
             configurations for your model interface_
 
-    '''
+    """
+
     __slots__ = (
         'dataclass_init',
         'alias_generator',
@@ -87,9 +87,9 @@ class ModelConfig:
         max_recursion_depth: int = 100,
         json_default_handler: Callable[[Any], Any] = str,
         deep_conversion: bool = True,
-        custom_model_config: Any | None = None
+        custom_model_config: Any | None = None,
     ) -> None:
-        '''Options to configure the behavior of a model interface.
+        """Options to configure the behavior of a model interface.
 
 
         Parameters
@@ -134,7 +134,7 @@ class ModelConfig:
             _custom configurations for the model interface, this is not used by the
             ModelInfterface class itself, but you can use to create and define custom
             configurations for your model interface_
-        '''
+        """
         self.dataclass_init: DataclassInit = dataclass_init or {}
         self.alias_generator: Callable[[str], str] | None = alias_generator
         self.populate_by_alias: bool = True

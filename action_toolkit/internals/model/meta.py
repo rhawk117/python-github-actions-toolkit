@@ -2,9 +2,8 @@ from typing import Any, Self
 from .options import ModelConfig
 
 
-
 def has_model_interface_method(cls: type) -> bool:
-    '''Check if the class has a method indicating it is a model interface
+    """Check if the class has a method indicating it is a model interface
     (i.e it has the attribute `_is_model_interface`).
 
     Parameters
@@ -15,12 +14,12 @@ def has_model_interface_method(cls: type) -> bool:
     Returns
     -------
     bool
-    '''
+    """
     return hasattr(cls, '_is_model_interface')
 
 
 def cls_name_is_model_interface(cls: type) -> bool:
-    '''Check if the class name is 'ModelInterface'.
+    """Check if the class name is 'ModelInterface'.
 
     Parameters
     ----------
@@ -30,12 +29,12 @@ def cls_name_is_model_interface(cls: type) -> bool:
     Returns
     -------
     bool
-    '''
+    """
     return hasattr(cls, '__name__') and cls.__name__ == 'ModelInterface'
 
 
 def is_model_interface_class(cls: type) -> bool:
-    '''Check if a class is a model interface class.
+    """Check if a class is a model interface class.
 
     Parameters
     ----------
@@ -45,8 +44,9 @@ def is_model_interface_class(cls: type) -> bool:
     Returns
     -------
     bool
-    '''
+    """
     return has_model_interface_method(cls) or cls_name_is_model_interface(cls)
+
 
 def inherits_from_model_interface(bases: tuple[type, ...]) -> bool:
     if not bases:
@@ -70,9 +70,8 @@ def inherits_from_model_interface(bases: tuple[type, ...]) -> bool:
     return False
 
 
-
 def _resolve_model_config(cls: type, bases: tuple[type, ...]) -> ModelConfig:
-    '''Attempts to resolve the ModelConfig for a model interface class by
+    """Attempts to resolve the ModelConfig for a model interface class by
     checking the class hierarchy for a parent with an initialized `model_config`
     attribute and returns the first one it finds, if none are found it returns
     a new `ModelConfig` instance.
@@ -88,8 +87,8 @@ def _resolve_model_config(cls: type, bases: tuple[type, ...]) -> ModelConfig:
     -------
     ModelConfig
         _the resolved model configuration_
-    '''
-    config: ModelConfig = getattr(cls, 'model_config', None) # type: ignore[assignment]
+    """
+    config: ModelConfig = getattr(cls, 'model_config', None)  # type: ignore[assignment]
     if config:
         return config
 
@@ -100,19 +99,12 @@ def _resolve_model_config(cls: type, bases: tuple[type, ...]) -> ModelConfig:
 
     return ModelConfig()
 
-class ModelInterfaceMeta(type):
-    '''Metaclass that automatically applies dataclass decorator with configuration.'''
 
-    def __new__(
-        mcs,
-        name,
-        bases,
-        namespace,
-        **kwargs
-    ) -> Any | Self:
+class ModelInterfaceMeta(type):
+    """Metaclass that automatically applies dataclass decorator with configuration."""
+
+    def __new__(mcs, name, bases, namespace, **kwargs) -> Any | Self:
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
 
         if cls_name_is_model_interface(cls):
             return cls
-
-        
