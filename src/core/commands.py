@@ -9,6 +9,8 @@ from .workflow_cmd.workflow import AnnotationOptions, WorkflowCommand
 
 LogLevel = Literal['debug', 'notice', 'warning', 'error']
 
+# Commands Documentation:
+# https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
 
 def debug(message: str) -> None:
     """Log a debug message."""
