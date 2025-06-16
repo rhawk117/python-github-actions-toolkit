@@ -2,6 +2,6 @@
 
 echo "::group::Running Tests"
 
-uvx pytest --cov=action_toolkit .
+uv run pytest --cov=action_toolkit .
 
 echo "::endgroup::"
