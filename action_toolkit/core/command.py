@@ -460,7 +460,7 @@ def error(
     commands.issue_command(
         command=WorkflowCommand.ERROR,
         properties=cmd_properties,
-        message=str(message),
+        message=str(message)
     )
 
 def start_group(*, name: str) -> None:

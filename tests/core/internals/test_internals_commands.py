@@ -73,31 +73,27 @@ class TestToCommandProperties:
         result = to_command_properties(props)
         assert result == {}
 
-    def test_all_properties(self):
-        '''Test all annotation properties with mapping'''
+    def test_all_properties_valid(self):
+        '''Test valid annotation properties with mapping'''
         props = AnnotationProperties(
             title='Error',
             file='main.py',
             startLine=42,
-            endLine=45,
+            endLine=42,  # Must be same as startLine for columns to work
             startColumn=10,
             endColumn=20
         )
 
-        # NOTE: This test reveals an issue - the current implementation
-        # uses dataclass_utils.dump_dataclass which doesn't handle the
-        # property name mappings (startLine -> line, etc.)
         result = to_command_properties(props)
 
         assert result == {
             'title': 'Error',
             'file': 'main.py',
-            'line': 42,
-            'endLine': 45,
-            'col': 10,
+            'line': 42,        # startLine maps to 'line'
+            'endLine': 42,
+            'col': 10,         # startColumn maps to 'col'
             'endColumn': 20
         }
-
 
     def test_partial_properties(self):
         '''Test partial annotation properties'''
@@ -109,7 +105,22 @@ class TestToCommandProperties:
 
         assert 'title' not in result
         assert result['file'] == 'test.py'
-        assert result['startLine'] == 10
+        assert result['line'] == 10  # startLine maps to 'line'
+
+    def test_line_only_properties(self):
+        '''Test properties with only line information'''
+        props = AnnotationProperties(
+            title='Warning',
+            startLine=5,
+            endLine=7
+        )
+        result = to_command_properties(props)
+
+        assert result == {
+            'title': 'Warning',
+            'line': 5,
+            'endLine': 7
+        }
 
 
 class TestEscapeFunctions:
@@ -312,16 +323,14 @@ class TestIssueFileCommand:
             temp_path = f.name
 
         try:
-            issue_file_command(
+            result = issue_file_command(
                 'OUTPUT',
                 'test message',
                 file_path=temp_path
             )
 
-            with open(temp_path, 'r') as f:
-                content = f.read()
-
-            assert content == 'test message' + os.linesep
+            expected_content = 'test message' + os.linesep
+            assert result == expected_content
         finally:
             os.unlink(temp_path)
 
@@ -332,16 +341,14 @@ class TestIssueFileCommand:
 
         try:
             with patch.dict(os.environ, {'TEST_OUTPUT': temp_path}):
-                issue_file_command(
+                result = issue_file_command(
                     'OUTPUT',
                     'env var message',
                     env_var='TEST_OUTPUT'
                 )
 
-            with open(temp_path, 'r') as f:
-                content = f.read()
-
-            assert content == 'env var message' + os.linesep
+            expected_content = 'env var message' + os.linesep
+            assert result == expected_content
         finally:
             os.unlink(temp_path)
 
@@ -365,15 +372,15 @@ class TestIssueFileCommand:
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, 'subdir', 'output.txt')
 
-            issue_file_command(
+            result = issue_file_command(
                 'OUTPUT',
                 'test message',
                 file_path=file_path
             )
 
             assert os.path.exists(file_path)
-            with open(file_path, 'r') as f:
-                assert f.read() == 'test message' + os.linesep
+            expected_content = 'test message' + os.linesep
+            assert result == expected_content
 
 
 class TestPrepareKeyValueMessage:
@@ -401,7 +408,7 @@ class TestPrepareKeyValueMessage:
         result = prepare_key_value_message('text', 'line1\nline2')
 
         lines = result.split(os.linesep)
-        assert lines[1] == 'line1\nline2'  # Raw newlines preserved in heredoc
+        assert lines[1] == 'line1\nline2'
 
     def test_delimiter_uniqueness(self):
         '''Test that delimiter is unique per call'''

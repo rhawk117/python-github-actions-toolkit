@@ -13,7 +13,7 @@ from .internals.utils import get_input_name, parse_yaml_boolean, split_lines
 __all__ = [
     'get_input',
     'get_multiline_input',
-    'get_bool_input',
+    'get_bool_input'
 ]
 
 def get_input(

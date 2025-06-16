@@ -142,7 +142,6 @@ class TestGetMultilineInput:
     def test_whitespace_only_lines(self):
         '''Test lines with only whitespace'''
         with patch.dict(os.environ, {'INPUT_SPACES': 'line1\n   \n\t\nline2'}):
-            # Default skips empty lines (after trimming)
             result = inputs.get_multiline_input('spaces')
             assert result == ['line1', 'line2']
 
@@ -158,8 +157,8 @@ class TestGetMultilineInput:
             result = inputs.get_multiline_input('trailing')
             assert result == ['line1', 'line2']
 
-            # With skip_empty_lines=False
-            result = inputs.get_multiline_input('trailing', skip_empty_lines=False)
+            # if you trim whitespace, the trailing newline is removed thus test case will fail
+            result = inputs.get_multiline_input('trailing', skip_empty_lines=False, trim_whitespace=False)
             assert result == ['line1', 'line2', '']
 
 

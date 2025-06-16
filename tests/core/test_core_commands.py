@@ -344,7 +344,7 @@ class TestLogging:
         assert 'title=Build Notice' in output
         assert 'file=build.py' in output
         # NOTE: Current implementation doesn't map startLine to line
-        assert 'startLine=42' in output  # Should be 'line=42' in correct implementation
+        assert 'line=42' in output  # Should be 'line=42' in correct implementation
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_warning_string(self, mock_stdout):

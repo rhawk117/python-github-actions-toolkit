@@ -103,7 +103,7 @@ class Summary:
         self._writer = writer
         self._buffer = StringIO()
         self._file_path = (
-            self._writer.file_path if hasattr(self._writer, 'file_path')
+            self._writer.file_path if hasattr(self._writer, 'file_path') # type: ignore
             else None
         )
 
@@ -311,7 +311,7 @@ class Summary:
             indent = '  ' * depth
             for i, item in enumerate(items, 1):
                 if isinstance(item, list):
-                    render_items(item, depth + 1)
+                    render_items(item, depth + 1) # type: ignore
                 else:
                     marker = f'{i}.' if ordered and depth == 0 else '-'
                     self.add_raw(f'{indent}{marker} {item}', add_eol=True)

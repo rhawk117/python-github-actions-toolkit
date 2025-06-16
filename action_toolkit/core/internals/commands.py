@@ -11,9 +11,7 @@ import sys
 import json
 from typing import TYPE_CHECKING, Any, Literal, TextIO, Final
 from action_toolkit.internals import dataclass_utils
-
-if TYPE_CHECKING:
-    from .types import CommandValue, CommandPropertyValue, WorkflowCommand, AnnotationProperties
+from .types import AnnotationProperties, WorkflowCommand, CommandValue, CommandPropertyValue
 
 CMD_STRING: Final[str] = '::'
 
@@ -364,7 +362,7 @@ def issue_file_command(
     *,
     env_var: str | None = None,
     file_path: str | None = None
-) -> None:
+) -> str:
     '''
     Issue a command by writing to a file.
 
@@ -398,8 +396,10 @@ def issue_file_command(
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
+    file_cmd = message + os.linesep
     with open(file_path, 'a', encoding='utf-8') as f:
-        f.write(message + os.linesep)
+        f.write(file_cmd)
+    return file_cmd
 
 
 def prepare_key_value_message(key: str, value: Any) -> str:
