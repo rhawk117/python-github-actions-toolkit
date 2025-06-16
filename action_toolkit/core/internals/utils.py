@@ -1,5 +1,5 @@
 '''
-**core.utils**
+**core.internals.utils**
 Utilities for GitHub Actions command handling, equivalent to utils.ts in TypeScript.
 
 This module provides utility functions for converting values and properties

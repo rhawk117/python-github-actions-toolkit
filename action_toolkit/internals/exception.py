@@ -1,4 +1,6 @@
-
+'''
+**action_toolkit.internals**
+'''
 EXC_FORMAT = 'PyActionToolkit.{name}: {message}.\n<cause={cause}>'
 
 class BaseActionError(Exception):

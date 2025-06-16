@@ -12,12 +12,9 @@ from pathlib import Path
 
 from io import StringIO
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
 from action_toolkit.core.internals.exceptions import CoreActionError
 
-if TYPE_CHECKING:
-    from typing import Any, IO
 
 
 class SummaryWriter(ABC):

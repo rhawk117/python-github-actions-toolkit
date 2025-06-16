@@ -414,7 +414,7 @@ def warning(
     commands.issue_command(
         command=WorkflowCommand.WARNING,
         properties=cmd_properties,
-        message=str(message),
+        message=str(message)
     )
 
 def error(
