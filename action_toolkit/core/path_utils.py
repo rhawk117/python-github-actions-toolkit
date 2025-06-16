@@ -1,4 +1,5 @@
 '''
+**core.path_utils**
 Path conversion utilities for GitHub Actions.
 
 This module provides cross-platform path conversion functions that

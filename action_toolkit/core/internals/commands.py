@@ -1,4 +1,9 @@
+'''
+**core.internals.commands**
 
+Abstracts the command handling functionality for GitHub Actions.
+
+'''
 
 import os
 import sys

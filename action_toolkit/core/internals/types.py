@@ -1,8 +1,10 @@
 '''
+**core.internals.types** module
 Type definitions and constants for GitHub Actions toolkit.
 
 This module provides type definitions, enums, and constants that mirror
-the TypeScript types in @actions/core.
+the TypeScript types in @actions/core and are provided for code readability
+and convience
 '''
 
 from __future__ import annotations
@@ -120,38 +122,7 @@ class AnnotationProperties:
                 )
 
 
-@dataclass(slots=True)
-class InputOptions:
-    '''
-    Options for getting action inputs.
 
-    Mirrors TypeScript's InputOptions interface.
-
-    Attributes
-    ----------
-    required : bool
-        Whether the input is required. If true and the input is not
-        provided, a ValueError will be raised. Default is False.
-    trimWhitespace : bool
-        Whether to trim whitespace from the input value. Default is True.
-    '''
-    required: bool = False
-    trimWhitespace: bool = True
-
-
-@dataclass(slots=True)
-class MultilineInputOptions(InputOptions):
-    '''
-    Options for getting multiline action inputs.
-
-    Extends InputOptions with multiline-specific behavior.
-
-    Attributes
-    ----------
-    skipEmptyLines : bool
-        Whether to filter out empty lines. Default is True.
-    '''
-    skipEmptyLines: bool = True
 
 
 class WorkflowEnv(StrEnum):
