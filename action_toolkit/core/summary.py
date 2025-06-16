@@ -75,8 +75,8 @@ class Summary:
     ...     .add_paragraph('All tests passed!')
     ...     .add_table([
     ...         ['Test', 'Status', 'Time'],
-    ...         ['test_foo', '✅ Passed', '1.2s'],
-    ...         ['test_bar', '✅ Passed', '0.8s']
+    ...         ['test_foo', 'Passed', '1.2s'],
+    ...         ['test_bar', 'Passed', '0.8s']
     ...     ])
     ...     .write())
     '''
