@@ -8,7 +8,11 @@ Functions related to retrieving action inputs
 import os
 
 from .internals.exceptions import InputError
-from .internals.utils import get_input_name, parse_yaml_boolean, split_lines
+from .internals.utils import (
+    get_input_name,
+    parse_yaml_boolean,
+    split_lines
+)
 
 __all__ = [
     'get_input',

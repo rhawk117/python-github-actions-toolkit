@@ -493,13 +493,9 @@ class Summary:
         return self.add_raw(f'[{text}]({href})')
 
 
-summary = Summary()
 
-markdown_summary = summary
 __all__ = [
     'Summary',
     'SummaryWriter',
     'FileSummaryWriter',
-    'summary',
-    'markdown_summary'
 ]

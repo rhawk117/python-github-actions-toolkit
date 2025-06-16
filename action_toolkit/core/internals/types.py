@@ -9,14 +9,9 @@ and convience
 
 from __future__ import annotations
 from dataclasses import dataclass
-from enum import Enum, IntEnum, StrEnum
+from enum import IntEnum, StrEnum
 from pathlib import Path
-from typing import Any
-
-try:
-    from typing import TypeAlias  # Python 3.11+
-except ImportError:
-    from typing_extensions import TypeAlias  # Python 3.8-3.10
+from typing import Any, TypeAlias
 
 from .exceptions import AnnotationError
 
@@ -65,7 +60,7 @@ class WorkflowCommand(StrEnum):
 
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     '''
     Log levels for GitHub Actions.
 
@@ -121,10 +116,6 @@ class AnnotationProperties:
                     'startColumn and endColumn cannot be sent when '
                     'startLine and endLine are different values'
                 )
-
-
-
-
 
 class WorkflowEnv(StrEnum):
     '''

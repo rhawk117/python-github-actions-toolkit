@@ -172,6 +172,13 @@ def export_variable(*, name: str, value: IOValue) -> None:
             file_path=env_file,
         )
     else:
+        warnings.warn(
+            "Could not find GITHUB_ENV environment variable,  "
+            "using set-env command instead. This approach is depracated and "
+            "may not work in all environments.",
+            category=RuntimeWarning,
+            stacklevel=2
+        )
         commands.issue_command(
             command=WorkflowCommand.SET_ENV,
             properties={"name": name},

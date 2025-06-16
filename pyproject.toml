@@ -12,7 +12,6 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
 
 [project.urls]
 repository = "https://github.com/rhawk117/python-github-actions-toolkit"
@@ -21,7 +20,7 @@ repository = "https://github.com/rhawk117/python-github-actions-toolkit"
 dev = [
     "coverage>=7.9.1",
     "pytest>=8.4.0",
-    "ruff>=0.11.13"
+    "ruff>=0.11.13",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -38,6 +37,11 @@ python_files = [
 python_functions = [
     "test_*"
 ]
+# addopts = [
+#     "--cov=actions_toolkit",
+#     "--cov-report=term-missing",
+#     "--cov-report=html:coverage_html_report",
+# ]
 
 log_cli=true
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
