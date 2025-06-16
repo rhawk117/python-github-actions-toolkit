@@ -13,7 +13,7 @@ import os
 import sys
 
 if TYPE_CHECKING:
-    from .types import CommandValue, CommandPropertyValue, WorkflowCommand
+    from .internals.types import CommandValue, CommandPropertyValue, WorkflowCommand
     from typing import Literal, TextIO, Any, Final
 
 CMD_STRING: Final[str] = '::'

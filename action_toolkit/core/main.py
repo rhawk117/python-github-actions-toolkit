@@ -15,14 +15,16 @@ import os
 import sys
 from contextlib import contextmanager
 import warnings
+from typing import TYPE_CHECKING
 
-from . import workflow_cmd
-from .utils import (
+from .internals.utils import (
     parse_yaml_boolean,
     get_input_name,
     split_lines,
 )
-from .types import (
+from .internals import commands
+from .internals.exceptions import InputError
+from .internals.types import (
     ExitCode,
     AnnotationProperties,
     InputOptions,
@@ -32,7 +34,6 @@ from .types import (
     WorkflowEnv,
     IOValue
 )
-from .exceptions import InputError
 
 
 
@@ -232,13 +233,13 @@ class Action:
         '''
         output_file = os.environ.get(WorkflowEnv.GITHUB_OUTPUT, None)
         if output_file:
-            workflow_cmd.issue_file_command(
+            commands.issue_file_command(
                 'OUTPUT',
-                workflow_cmd.prepare_key_value_message(name, value),
+                commands.prepare_key_value_message(name, value),
                 file_path=output_file
             )
         else:
-            workflow_cmd.issue_command(
+            commands.issue_command(
                 command=WorkflowCommand.SET_OUTPUT,
                 properties={'name': name},
                 message=value # type: ignore[call-arg]
@@ -266,7 +267,7 @@ class Action:
         >>> # Disable command echoing (default)
         >>> set_command_echo(enabled=False)
         '''
-        workflow_cmd.issue(
+        commands.issue(
             name=WorkflowCommand.ECHO,
             message='on' if enabled else 'off'
         )
@@ -351,13 +352,13 @@ class Action:
 
         env_file = os.environ.get(WorkflowEnv.GITHUB_ENV, None)
         if env_file:
-            workflow_cmd.issue_file_command(
+            commands.issue_file_command(
                 'ENV',
-                workflow_cmd.prepare_key_value_message(name, value),
+                commands.prepare_key_value_message(name, value),
                 file_path=env_file
             )
         else:
-            workflow_cmd.issue_command(
+            commands.issue_command(
                 command=WorkflowCommand.SET_ENV,
                 properties={'name': name},
                 message=value
@@ -381,7 +382,7 @@ class Action:
         >>> set_secret(secret='my-password-123')
         >>> set_secret(secret={'apiKey': 'secret-key'})  # JSON serialized
         '''
-        workflow_cmd.issue_command(
+        commands.issue_command(
             command=WorkflowCommand.ADD_MASK,
             properties={},
             message=secret
@@ -423,7 +424,7 @@ class Action:
             with open(path_file, 'a', encoding='utf-8') as f:
                 f.write(path_str + os.linesep)
         else:
-            workflow_cmd.issue_command(
+            commands.issue_command(
                 command=WorkflowCommand.ADD_PATH,
                 properties={},
                 message=path_str
@@ -459,13 +460,13 @@ class Action:
         '''
         state_file = os.environ.get(WorkflowEnv.GITHUB_STATE, None)
         if state_file:
-            workflow_cmd.issue_file_command(
+            commands.issue_file_command(
                 'STATE',
-                workflow_cmd.prepare_key_value_message(name, value),
+                commands.prepare_key_value_message(name, value),
                 file_path=state_file
             )
         else:
-            workflow_cmd.issue_command(
+            commands.issue_command(
                 command=WorkflowCommand.SAVE_STATE,
                 properties={'name': name},
                 message=value
@@ -516,7 +517,7 @@ class ActionLogger:
         --------
         >>> debug(message='Entering function X with params Y')
         '''
-        workflow_cmd.issue_command(
+        commands.issue_command(
             command=WorkflowCommand.DEBUG,
             properties={},
             message=message
@@ -554,10 +555,10 @@ class ActionLogger:
         ...     )
         ... )
         '''
-        cmd_properties = workflow_cmd.to_command_properties(
+        cmd_properties = commands.to_command_properties(
             annotation_properties=properties or AnnotationProperties()
         )
-        workflow_cmd.issue_command(
+        commands.issue_command(
             command=WorkflowCommand.NOTICE,
             properties=cmd_properties,
             message=message
@@ -595,10 +596,10 @@ class ActionLogger:
         ...     )
         ... )
         '''
-        cmd_properties = workflow_cmd.to_command_properties(
+        cmd_properties = commands.to_command_properties(
             annotation_properties=properties or AnnotationProperties()
         )
-        workflow_cmd.issue_command(
+        commands.issue_command(
             command=WorkflowCommand.WARNING,
             properties=cmd_properties,
             message=str(message)
@@ -639,10 +640,10 @@ class ActionLogger:
         ...         )
         ...     )
         '''
-        cmd_properties = workflow_cmd.to_command_properties(
+        cmd_properties = commands.to_command_properties(
             annotation_properties=properties or AnnotationProperties()
         )
-        workflow_cmd.issue_command(
+        commands.issue_command(
             command=WorkflowCommand.ERROR,
             properties=cmd_properties,
             message=str(message)
@@ -673,7 +674,7 @@ class ActionLogger:
         >>> # ... build output ...
         >>> end_group()
         '''
-        workflow_cmd.issue(name=WorkflowCommand.GROUP, message=name)
+        commands.issue(name=WorkflowCommand.GROUP, message=name)
 
     @staticmethod
     def end_group() -> None:
@@ -694,7 +695,7 @@ class ActionLogger:
         >>> # ... test output ...
         >>> end_group()
         '''
-        workflow_cmd.issue(name=WorkflowCommand.ENDGROUP)
+        commands.issue(name=WorkflowCommand.ENDGROUP)
 
     @staticmethod
     @contextmanager

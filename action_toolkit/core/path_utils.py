@@ -11,7 +11,7 @@ from pathlib import Path
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .types import StringOrPath
+    from .internals.types import StringOrPath
 
 
 def to_posix_path(path: StringOrPath) -> str:
