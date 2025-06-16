@@ -128,8 +128,6 @@ class TestJsonDumpsDataclass:
         assert 'email' not in parsed
 
 
-
-
 class TestIterDataclass:
     '''Test cases for iter_dataclass function'''
 
