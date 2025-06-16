@@ -6,14 +6,14 @@ the TypeScript types in @actions/core.
 '''
 
 from __future__ import annotations
-from dataclasses import dataclass, field
-from enum import Enum, IntEnum
-from typing import Protocol, runtime_checkable
+from dataclasses import dataclass
+from enum import Enum, IntEnum, StrEnum
+from pathlib import Path
 
 try:
-    from typing import TypedDict, NotRequired, Literal, TypeAlias  # Python 3.11+
+    from typing import TypeAlias  # Python 3.11+
 except ImportError:
-    from typing_extensions import TypedDict, NotRequired, Literal, TypeAlias  # Python 3.8-3.10
+    from typing_extensions import TypeAlias  # Python 3.8-3.10
 
 from .exceptions import AnnotationError
 
@@ -34,7 +34,7 @@ class ExitCode(IntEnum):
     Failure = 1
 
 
-class WorkflowCommand(str, Enum):
+class WorkflowCommand(StrEnum):
     '''
     GitHub Actions workflow commands.
 
@@ -59,6 +59,7 @@ class WorkflowCommand(str, Enum):
     ADD_MASK = 'add-mask' # for secrets
     ECHO = 'echo'
     FILE_COMMAND = 'file-command' # for file commands (newer style)
+
 
 
 class LogLevel(str, Enum):
@@ -153,29 +154,27 @@ class MultilineInputOptions(InputOptions):
     skipEmptyLines: bool = True
 
 
-ENV_VARS = {
-    'GITHUB_OUTPUT': 'GITHUB_OUTPUT',
-    'GITHUB_STATE': 'GITHUB_STATE',
-    'GITHUB_PATH': 'GITHUB_PATH',
-    'GITHUB_ENV': 'GITHUB_ENV',
-    'RUNNER_DEBUG': 'RUNNER_DEBUG',
-    'GITHUB_WORKSPACE': 'GITHUB_WORKSPACE',
-    'GITHUB_ACTION': 'GITHUB_ACTION',
-    'GITHUB_ACTION_PATH': 'GITHUB_ACTION_PATH',
-}
+class WorkflowEnv(StrEnum):
+    '''
+    Environment variables used in GitHub Actions workflows.
+
+    These are the environment variables that are set by the GitHub Actions
+    runner and can be used within actions.
+    '''
+    GITHUB_OUTPUT = 'GITHUB_OUTPUT'
+    GITHUB_STATE = 'GITHUB_STATE'
+    GITHUB_PATH = 'GITHUB_PATH'
+    GITHUB_ENV = 'GITHUB_ENV'
+    RUNNER_DEBUG = 'RUNNER_DEBUG'
+    GITHUB_WORKSPACE = 'GITHUB_WORKSPACE'
+    GITHUB_ACTION = 'GITHUB_ACTION'
+    GITHUB_ACTION_PATH = 'GITHUB_ACTION_PATH'
 
 
 # YAML 1.2 boolean values (case-insensitive)
 YAML_BOOLEAN_TRUE = frozenset(['true', 'yes', 'on', 'y', '1'])
 YAML_BOOLEAN_FALSE = frozenset(['false', 'no', 'off', 'n', '0'])
 
-
-@runtime_checkable
-class Stringifiable(Protocol):
-    '''Protocol for objects that can be converted to strings.'''
-    def __str__(self) -> str: ...
-
-
-IOValue: TypeAlias = str | int | float | bool  | Stringifiable
-
-
+IOValue: TypeAlias = str | int | float | bool
+StringOrPath: TypeAlias = str | Path
+StringOrException: TypeAlias = str | Exception

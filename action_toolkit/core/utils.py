@@ -1,69 +1,149 @@
 '''
-**utils.py** - Utility functions for the Action Toolkit, re-write in python
+**core.utils**
+Utilities for GitHub Actions command handling, equivalent to utils.ts in TypeScript.
 
+This module provides utility functions for converting values and properties
+from strings to command values, handling annotations, and parsing inputs.
 '''
-
 from __future__ import annotations
-import json
-from typing import Any
-try:
-    from typing import TypedDict, NotRequired  # Python 3.11+
-except ImportError:
-    from typing_extensions import TypedDict, NotRequired  # Python 3.8-3.10
 
 
-class AnnotationProperties(TypedDict):
-    '''Properties for workflow command annotations'''
-    title: NotRequired[str]
-    file: NotRequired[str]
-    startLine: NotRequired[int]
-    endLine: NotRequired[int]
-    startColumn: NotRequired[int]
-    endColumn: NotRequired[int]
 
-
-CommandProperties = dict[str, Any]
-
-
-def to_command_value(*, input: Any) -> str:
+def parse_yaml_boolean(value: str) -> bool:
     '''
-    Sanitizes an input into a string so it can be passed into issue_command safely
+    Parse a boolean value according to YAML 1.2 specification.
 
-    Args:
-        input: Input value to sanitize into a string
+    This utility function is used internally by getBooleanInput
+    to parse boolean strings consistently with GitHub Actions.
 
-    Returns:
-        Sanitized string representation of the input
+    These are "truthy" values according to YAML and have types
+    definied which you can find in types.py which are also below
+    for convenience:
+    ```python
+    YAML_BOOLEAN_TRUE = frozenset(['true', 'yes', 'on', 'y', '1'])
+    YAML_BOOLEAN_FALSE = frozenset(['false', 'no', 'off', 'n', '0'])
+    ```
+
+    Parameters
+    ----------
+    value : str
+        The string value to parse.
+
+    Returns
+    -------
+    bool
+        True if the value is a YAML truthy value, False otherwise.
+
+    Notes
+    -----
+    Truthy values (case-insensitive): true, yes, on, y, 1
+    All other values are considered False.
+
+    Examples
+    --------
+    >>> parse_boolean('true')
+    True
+
+    >>> parse_boolean('YES')
+    True
+
+    >>> parse_boolean('1')
+    True
+
+    >>> parse_boolean('false')
+    False
+
+    >>> parse_boolean('anything else')
+    False
     '''
-    if input is None:
-        return ''
-
-    elif isinstance(input, str):
-        return input
-
-    return json.dumps(input)
+    from .types import YAML_BOOLEAN_TRUE
+    return value.lower() in YAML_BOOLEAN_TRUE
 
 
-def to_command_properties(*, annotation_properties: AnnotationProperties) -> CommandProperties:
+def get_input_name(name: str) -> str:
     '''
-    Converts annotation properties to command properties format
+    Converts an input name to its environment variable form.
 
-    Args:
-        annotation_properties: Annotation properties to convert
+    GitHub Actions converts input names to uppercase environment
+    variables prefixed with INPUT_. This function performs that
+    conversion.
 
-    Returns:
-        Command properties dictionary for the annotation command
+    Parameters
+    ----------
+    name : str
+        The input name to convert.
 
-    See IssueCommandProperties: https://github.com/actions/runner/blob/main/src/Runner.Worker/ActionCommandManager.cs#L646
+    Returns
+    -------
+    str
+        The environment variable name.
+
+    Examples
+    --------
+    >>> get_input_name('my-input')
+    'INPUT_MY_INPUT'
+
+    >>> get_input_name('my input name')
+    'INPUT_MY_INPUT_NAME'
     '''
-    if not annotation_properties:
-        return {}
+    normalized = name.upper().replace(' ', '_').replace('-', '_')
+    return f'INPUT_{normalized}'
 
-    command_props: CommandProperties = {}
 
-    props = ('title', 'file', 'line', 'endLine', 'col', 'endColumn')
-    for prop in props:
-        if not prop in annotation_properties:
-            continue
-        command_props[prop] = annotation_properties[prop] # type: ignore[assignment]
-    return command_props
+def split_lines(input: str, *, skip_empty: bool = True) -> list[str]:
+    '''
+    Split a multiline string into individual lines.
+
+    This utility is used by getMultilineInput to process
+    multiline input values.
+
+    Parameters
+    ----------
+    input : str
+        The multiline string to split.
+    skip_empty : bool
+        Whether to filter out empty lines. Default is True.
+
+    Returns
+    -------
+    list[str]
+        List of individual lines.
+
+    Examples
+    --------
+    >>> split_lines('line1\\nline2\\n\\nline3')
+    ['line1', 'line2', 'line3']
+
+    >>> split_lines('line1\\nline2\\n\\nline3', skip_empty=False)
+    ['line1', 'line2', '', 'line3']
+    '''
+    lines = input.split('\n')
+
+    if skip_empty:
+        return list(filter(lambda line: line.strip() != '', lines))
+
+    return lines
+
+
+def is_valid_url(url: str) -> bool:
+    '''
+    Check if a string is a valid URL.
+
+    Used internally for validation of certain inputs.
+
+    Parameters
+    ----------
+    url : str
+        The string to validate.
+
+    Returns
+    -------
+    bool
+        True if the string is a valid URL, False otherwise.
+    '''
+    try:
+        from urllib.parse import urlparse
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except Exception:
+        return False

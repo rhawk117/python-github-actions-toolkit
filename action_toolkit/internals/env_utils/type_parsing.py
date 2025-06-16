@@ -14,6 +14,8 @@ from typing import (
 
 T = TypeVar('T')
 
+from dataclasses import field
+
 
 class ParsableType(Protocol[T]):
     """Two simple static methods for (de)serialising one type."""
@@ -58,7 +60,7 @@ _HANDLERS: dict[type, _TypeHandler[Any]] = {
     bool: _TypeHandler(_bool_parse, lambda b: 'true' if b else 'false'),
     list: _TypeHandler(_list_parser, _list_serializer),
     dict: _TypeHandler(json.loads, json.dumps),
-    Path: _TypeHandler(Path, str),
+    Path: _TypeHandler(Path, str)
 }
 
 
