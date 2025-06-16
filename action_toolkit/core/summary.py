@@ -498,11 +498,11 @@ class Summary:
 
 summary = Summary()
 
-markdownSummary = summary
+markdown_summary = summary
 __all__ = [
     'Summary',
     'SummaryWriter',
     'FileSummaryWriter',
     'summary',
-    'markdownSummary'
+    'markdown_summary'
 ]
