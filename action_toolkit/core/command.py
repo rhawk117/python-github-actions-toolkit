@@ -22,7 +22,7 @@ from .internals.types import (
     StringOrPath,
     WorkflowCommand,
     WorkflowEnv,
-    IOValue,
+    IOValue
 )
 
 
@@ -175,7 +175,7 @@ def export_variable(*, name: str, value: IOValue) -> None:
         commands.issue_command(
             command=WorkflowCommand.SET_ENV,
             properties={"name": name},
-            message=value,
+            message=value
         )
 
 def set_secret(*, secret: str | IOValue) -> None:
@@ -374,7 +374,9 @@ def notice(message: str, *, properties: AnnotationProperties | None = None) -> N
         annotation_properties=properties or AnnotationProperties()
     )
     commands.issue_command(
-        command=WorkflowCommand.NOTICE, properties=cmd_properties, message=message
+        command=WorkflowCommand.NOTICE,
+        properties=cmd_properties,
+        message=message
     )
 
 def warning(
@@ -416,6 +418,7 @@ def warning(
         properties=cmd_properties,
         message=str(message)
     )
+
 
 def error(
     message: StringOrException,

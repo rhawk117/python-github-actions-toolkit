@@ -4,16 +4,16 @@
 Abstracts the command handling functionality for GitHub Actions.
 
 '''
+from __future__ import annotations
 
 import os
 import sys
 import json
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TextIO, Final
 from action_toolkit.internals import dataclass_utils
 
 if TYPE_CHECKING:
     from .types import CommandValue, CommandPropertyValue, WorkflowCommand, AnnotationProperties
-    from typing import TextIO, Final, Any
 
 CMD_STRING: Final[str] = '::'
 
@@ -74,54 +74,28 @@ def to_command_value(*, input: CommandValue) -> str:
         return str(input)
 
 
-def to_command_properties(
-    annotation_properties: AnnotationProperties
-) -> dict[str, CommandPropertyValue]:
-    '''
-    Convert annotation properties to command properties format.
+def to_command_properties(annotation_properties: AnnotationProperties) -> dict[str, CommandPropertyValue]:
+    command_props: dict[str, CommandPropertyValue] = {}
 
-    This function mirrors toCommandProperties in ts, mapping
-    the annotation property names to the command property names
-    expected by the GitHub Actions runner.
+    if annotation_properties.title is not None:
+        command_props['title'] = annotation_properties.title
 
-    Parameters
-    ----------
-    annotation_properties : AnnotationProperties
-        The annotation properties to convert.
+    if annotation_properties.file is not None:
+        command_props['file'] = annotation_properties.file
 
-    Returns
-    -------
-    dict[str, CommandPropertyValue]
-        Command properties dictionary with mapped keys:
-        - title -> title
-        - file -> file
-        - startLine -> line
-        - endLine -> endLine
-        - startColumn -> col
-        - endColumn -> endColumn
+    if annotation_properties.startLine is not None:
+        command_props['line'] = annotation_properties.startLine  # Map startLine -> line
 
-    See Also
-    --------
-    IssueCommandProperties in the GitHub Actions runner:
-    https://github.com/actions/runner/blob/main/src/Runner.Worker/ActionCommandManager.cs#L646
+    if annotation_properties.endLine is not None:
+        command_props['endLine'] = annotation_properties.endLine
 
-    Examples
-    --------
-    >>> from types import AnnotationProperties
-    >>> props = AnnotationProperties(
-    ...     title='Error',
-    ...     file='main.py',
-    ...     startLine=42
-    ... )
-    >>> to_command_properties(annotation_properties=props)
-    {'title': 'Error', 'file': 'main.py', 'line': 42}
-    '''
-    command_props: dict[str, CommandPropertyValue] = dataclass_utils.dump_dataclass(
-        annotation_properties,
-        exclude_none=True
-    )
+    if annotation_properties.startColumn is not None:
+        command_props['col'] = annotation_properties.startColumn  # Map startColumn -> col
+
+    if annotation_properties.endColumn is not None:
+        command_props['endColumn'] = annotation_properties.endColumn
+
     return command_props
-
 
 def escape_data(s: Any) -> str:
     '''

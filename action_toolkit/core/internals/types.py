@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, IntEnum, StrEnum
 from pathlib import Path
+from typing import Any
 
 try:
     from typing import TypeAlias  # Python 3.11+
@@ -146,6 +147,6 @@ class WorkflowEnv(StrEnum):
 YAML_BOOLEAN_TRUE = frozenset(['true', 'yes', 'on', 'y', '1'])
 YAML_BOOLEAN_FALSE = frozenset(['false', 'no', 'off', 'n', '0'])
 
-IOValue: TypeAlias = str | int | float | bool
+IOValue: TypeAlias = str | int | float | bool | dict[str, Any]
 StringOrPath: TypeAlias = str | Path
 StringOrException: TypeAlias = str | Exception
