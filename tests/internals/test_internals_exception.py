@@ -10,14 +10,16 @@ class TestBaseActionError:
     def test_basic_exception(self):
         '''Test basic exception creation'''
         error = BaseActionError("Something went wrong")
-        assert "PyActionToolkit.BaseActionError: Something went wrong." in str(error)
+        assert "PyActionToolkit.BaseActionError: Something went wrong." in str(
+            error)
         assert "<cause=N/A>" in str(error)
 
     def test_exception_with_cause(self):
         '''Test exception with underlying cause'''
         cause = ValueError("Invalid value")
         error = BaseActionError("Operation failed", cause=cause)
-        assert "PyActionToolkit.BaseActionError: Operation failed." in str(error)
+        assert "PyActionToolkit.BaseActionError: Operation failed." in str(
+            error)
         assert "<cause=ValueError>" in str(error)
 
     def test_exception_inheritance(self):

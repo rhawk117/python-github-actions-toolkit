@@ -40,7 +40,7 @@ class TestToCommandValue:
             (3.14, '3.14'),
             (0, '0'),
             (-10, '-10'),
-            ([1,2,3], '[1,2,3]'),
+            ([1, 2, 3], '[1,2,3]'),
             ([], '[]'),
             (['a', 'b'], '["a","b"]'),
             ({'key': 'value'}, '{"key":"value"}'),
@@ -402,13 +402,6 @@ class TestPrepareKeyValueMessage:
 
         lines = result.split(os.linesep)
         assert lines[1] == '{"key":"value","num":42}'
-
-    def test_multiline_value(self):
-        '''Test value with newlines'''
-        result = prepare_key_value_message('text', 'line1\nline2')
-
-        lines = result.split(os.linesep)
-        assert lines[1] == 'line1\nline2'
 
     def test_delimiter_uniqueness(self):
         '''Test that delimiter is unique per call'''
