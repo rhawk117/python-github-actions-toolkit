@@ -37,7 +37,6 @@ runs:
         enable-cache: ${{ inputs.enable-cache }}
         cache-dependency-glob: 'uv.lock'
 
-
     - name: Setup python
       uses: actions/setup-python@v4
       with:

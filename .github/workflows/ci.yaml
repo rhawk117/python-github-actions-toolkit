@@ -4,6 +4,7 @@ on:
       - '**.md'
       - '**.txt'
       - '**.json'
+
   workflow_dispatch:
 
 jobs:
