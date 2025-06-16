@@ -1,11 +1,9 @@
 
 
+from ..internals.exception import BaseActionError
 
 
-from internals.exception import BaseActionError
-
-
-class IOError(BaseActionError):
+class ActionIOError(BaseActionError):
     """Base class for all IO-related errors in the action toolkit.
 
     This class is used to represent errors that occur during input/output operations

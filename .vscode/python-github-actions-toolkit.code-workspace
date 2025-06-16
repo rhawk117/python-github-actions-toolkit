@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"path": "..",
+			"name": "root"
+		},
+		{
+			"path": "../action_toolkit",
+			"name": "src"
+		},
+		{
+			"path": "../tests",
+			"name": "tests"
+		}
+	],
+	"settings": {
+		"python.pythonPath": "../.venv/bin/python",
+		"python.analysis.typeCheckingMode": "basic",
+		"python.analysis.diagnosticMode": "workspace",
+		"python.analysis.autoSearchPaths": true,
+		"python.analysis.useLibraryCodeForTypes": true,
+		"python.formatting.provider": "black",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": true
+		},
+		"python.linting.enabled": true,
+		"python.linting.pylintEnabled": true
+	}
+}

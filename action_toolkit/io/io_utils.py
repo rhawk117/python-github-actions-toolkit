@@ -6,15 +6,16 @@ awaitable and platform-agnostic.
 '''
 
 from __future__ import annotations
-from collections.abc import Callable
+
 import os
 import sys
 import stat as stat_module
 import asyncio
 import warnings
 import shutil
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Optional, TypeAlias
+from typing import Any, Final, Optional, TypeAlias
 from .async_fs import AsyncFileSystem
 
 
@@ -22,6 +23,7 @@ _fs = AsyncFileSystem()
 
 FilePath: TypeAlias = str | bytes | os.PathLike[str] | os.PathLike[bytes]
 StringPath: TypeAlias = str | os.PathLike[str]
+IS_WINDOWS: Final[bool] = sys.platform == 'win32'
 
 
 async def chmod(path: FilePath, mode: int) -> None:
@@ -73,9 +75,6 @@ async def stat(path: FilePath) -> os.stat_result:
 async def unlink(path: FilePath) -> None:
     """Remove a file."""
     return await _fs.unlink(path)
-
-
-IS_WINDOWS = sys.platform == 'win32'
 
 
 async def run_in_executor(
@@ -283,8 +282,8 @@ def _try_get_exc_warning(
         Warning message.
     '''
     return (
-        f'Unexpected error attempting to determine if executable file exists '
-        f'\'{file_path}\': {err}'
+        'Unexpected error occured while attempting to determine '
+        f'if an executable file exists \'{file_path}\': {err}'
     )
 
 
@@ -313,7 +312,7 @@ async def try_get_executable_path(
     try:
         stats = await stat(file_path)
     except OSError as err:
-        if err.errno != 2:  # ENOENT
+        if err.errno != 2:  # ENOENT, file does not exist
             warnings.warn(
                 _try_get_exc_warning(file_path, err),
                 RuntimeWarning
@@ -336,7 +335,7 @@ async def try_get_executable_path(
         try:
             stats = await stat(file_path)
         except OSError as err:
-            if err.errno != 2:  # ENOENT
+            if err.errno != 2:  # ENOENT, file does not exist
                 warnings.warn(
                     _try_get_exc_warning(file_path, err),
                     RuntimeWarning
