@@ -18,14 +18,10 @@ jobs:
         with:
           install-dev: 'true'
 
-      - name: Run
+      - name: Ruff Format and Linit
         run: |
+          uv sync --dev
           echo "::debug::Running code quality checks"
-
-          echo "::group::Ruff Output"
-          uvx ruff --force-exclude --config .ruff.toml --fix --unsafe-fixes
-          uvx ruff format --force-exclude
-          echo "::endgroup::"
-
+          chmod +x ./scripts/ruff.sh
+          ./scripts/ruff.sh
           echo "::notice::Formating and linting complete"
-
