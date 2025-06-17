@@ -1,4 +1,5 @@
 '''
+**core.summary**
 GitHub Actions job summary functionality.
 
 This module provides the Summary class for creating markdown summaries
@@ -12,6 +13,7 @@ from pathlib import Path
 
 from io import StringIO
 from abc import ABC, abstractmethod
+from typing import Self
 
 from action_toolkit.core.internals.exceptions import CoreActionError
 
@@ -107,7 +109,7 @@ class Summary:
             else None
         )
 
-    def write(self, *, overwrite: bool = False) -> 'Summary':
+    def write(self, *, overwrite: bool = False) -> Self:
         '''
         Write the summary buffer to the summary file.
 
@@ -131,7 +133,7 @@ class Summary:
 
         return self
 
-    def clear(self) -> 'Summary':
+    def clear(self) -> Self:
         '''
         Clear both the buffer and the summary file.
 
@@ -166,7 +168,7 @@ class Summary:
         '''
         return self._buffer.tell() == 0
 
-    def add_raw(self, text: str, *, add_eol: bool = False) -> 'Summary':
+    def add_raw(self, text: str, *, add_eol: bool = False) -> Self:
         '''
         Add raw text to the summary.
 
@@ -187,7 +189,7 @@ class Summary:
             self._buffer.write(os.linesep)
         return self
 
-    def add_eol(self) -> 'Summary':
+    def add_eol(self) -> Self:
         '''
         Add an end-of-line character.
 
@@ -198,7 +200,7 @@ class Summary:
         '''
         return self.add_raw(os.linesep)
 
-    def add_heading(self, text: str, *, level: int = 1) -> 'Summary':
+    def add_heading(self, text: str, *, level: int = 1) -> Self:
         '''
         Add a markdown heading.
 
@@ -225,7 +227,7 @@ class Summary:
         prefix = '#' * level
         return self.add_raw(f'{prefix} {text}', add_eol=True).add_eol()
 
-    def add_paragraph(self, text: str) -> 'Summary':
+    def add_paragraph(self, text: str) -> Self:
         '''
         Add a paragraph with proper spacing.
 
@@ -241,7 +243,7 @@ class Summary:
         '''
         return self.add_raw(text, add_eol=True).add_eol()
 
-    def add_text(self, text: str) -> 'Summary':
+    def add_text(self, text: str) -> Self:
         '''
         Add text without additional formatting.
 
@@ -262,7 +264,7 @@ class Summary:
         code: str,
         *,
         lang: str | None = None
-    ) -> 'Summary':
+    ) -> Self:
         '''
         Add a fenced code block with optional syntax highlighting.
 
@@ -291,7 +293,7 @@ class Summary:
         items: list[str | list[str]],
         *,
         ordered: bool = False
-    ) -> 'Summary':
+    ) -> Self:
         '''
         Add a list (ordered or unordered).
 
@@ -319,7 +321,7 @@ class Summary:
         render_items(items)
         return self.add_eol()
 
-    def add_table(self, rows: list[list[str]]) -> 'Summary':
+    def add_table(self, rows: list[list[str]]) -> Self:
         '''
         Add a markdown table.
 
@@ -358,7 +360,7 @@ class Summary:
         self,
         label: str,
         content: str
-    ) -> 'Summary':
+    ) -> Self:
         '''
         Add a collapsible details section.
 
@@ -392,7 +394,7 @@ class Summary:
         title: str | None = None,
         width: int | None = None,
         height: int | None = None
-    ) -> 'Summary':
+    ) -> Self:
         '''
         Add an image.
 
@@ -427,7 +429,7 @@ class Summary:
 
         return self.add_raw(img_tag, add_eol=True).add_eol()
 
-    def add_separator(self) -> 'Summary':
+    def add_separator(self) -> Self:
         '''
         Add a horizontal separator.
 
@@ -438,7 +440,7 @@ class Summary:
         '''
         return self.add_raw('---', add_eol=True).add_eol()
 
-    def add_break(self) -> 'Summary':
+    def add_break(self) -> Self:
         '''
         Add a line break.
 
@@ -449,7 +451,7 @@ class Summary:
         '''
         return self.add_raw('<br>', add_eol=True)
 
-    def add_quote(self, text: str, *, cite: str | None = None) -> 'Summary':
+    def add_quote(self, text: str, *, cite: str | None = None) -> Self:
         '''
         Add a block quote.
 
@@ -474,7 +476,7 @@ class Summary:
 
         return self.add_eol()
 
-    def add_link(self, text: str, href: str) -> 'Summary':
+    def add_link(self, text: str, href: str) -> Self:
         '''
         Add an inline link.
 

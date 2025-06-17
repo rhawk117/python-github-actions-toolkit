@@ -187,41 +187,6 @@ def is_absolute(path: StringOrPathlib) -> bool:
     return Path(path).is_absolute()
 
 
-def join_path(*paths: StringOrPathlib) -> str:
-    '''
-    Join path components intelligently.
-
-    This function provides a cross-platform way to join paths,
-    similar to Node.js path.join().
-
-    Parameters
-    ----------
-    *paths : Union[str, Path]
-        Path components to join.
-
-    Returns
-    -------
-    str
-        The joined path with platform-appropriate separators.
-
-    Examples
-    --------
-    >>> join_path('/home', 'user', 'documents', 'file.txt')
-    '/home/user/documents/file.txt'  # On Unix
-
-    >>> join_path('C:', 'Users', 'test', 'file.txt')
-    'C:\\Users\\test\\file.txt'  # On Windows
-    '''
-    if not paths:
-        return ''
-
-    result = Path(paths[0])
-    for p in paths[1:]:
-        result = result / p
-
-    return str(result)
-
-
 def get_relative_path(path: StringOrPathlib, base: StringOrPathlib) -> str:
     '''
     Get the relative path from base to path.

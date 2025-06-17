@@ -26,7 +26,6 @@ from .path_utils import (
     to_platform_path,
     normalize_path,
     is_absolute,
-    join_path,
     get_relative_path
 )
 from .summary import (
@@ -34,6 +33,7 @@ from .summary import (
     FileSummaryWriter,
     Summary
 )
+from .platform_utils import get_platform
 
 __all__ = [
     'set_output',
@@ -59,9 +59,9 @@ __all__ = [
     'to_platform_path',
     'normalize_path',
     'is_absolute',
-    'join_path',
     'get_relative_path',
     'SummaryWriter',
     'FileSummaryWriter',
     'Summary',
+    'get_platform'
 ]

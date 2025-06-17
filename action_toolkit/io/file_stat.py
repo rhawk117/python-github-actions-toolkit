@@ -1,7 +1,7 @@
-
-
-
-
+'''
+**action_toolkit.io.internals.file_stat**
+Wrapper around `os.stat_result` to provide additional convenience methods
+'''
 import dataclasses
 import os
 import stat

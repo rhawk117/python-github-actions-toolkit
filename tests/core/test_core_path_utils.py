@@ -13,7 +13,6 @@ from action_toolkit.core.path_utils import (
     to_platform_path,
     normalize_path,
     is_absolute,
-    join_path,
     get_relative_path
 )
 
