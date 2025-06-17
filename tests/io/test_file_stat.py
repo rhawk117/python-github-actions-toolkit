@@ -157,12 +157,12 @@ class TestOwnerGroup:
         f.write_text("o2")
         fs = FileStat.path(f)
         monkeypatch.setattr(
-            "action_toolkit.io.internals.file_stat.pwd.getpwuid",
+            "action_toolkit.io.file_stat.pwd.getpwuid",
             lambda uid: (_ for _ in ()).throw(KeyError()),
         )
         assert fs.owner == str(fs.uid)
         monkeypatch.setattr(
-            "action_toolkit.io.internals.file_stat.grp.getgrgid",
+            "action_toolkit.io.file_stat.grp.getgrgid",
             lambda gid: (_ for _ in ()).throw(KeyError()),
         )
         assert fs.group == str(fs.gid)
