@@ -217,13 +217,13 @@ def get_relative_path(path: StringOrPathlib, base: StringOrPathlib) -> str:
     >>> get_relative_path('/home/user', '/home/user/docs')
     '..'
     '''
+    path = Path(path).resolve()
+    base = Path(base).resolve()
     try:
-        return str(Path(path).relative_to(Path(base)))
+        return str(path.relative_to(base))
     except ValueError:
-        path_obj = Path(path).resolve()
-        base_obj = Path(base).resolve()
-
-        try:
-            return str(path_obj.relative_to(base_obj))
-        except ValueError:
-            return str(path_obj)
+        if path.anchor != base.anchor:
+            raise ValueError(
+                f"Cannot make '{path}' relative to '{base}' due to different anchors."
+            )
+        return str(path)
