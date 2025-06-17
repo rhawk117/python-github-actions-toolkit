@@ -10,7 +10,6 @@ and convience
 from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
-from pathlib import Path
 
 from .exceptions import AnnotationError
 
@@ -131,7 +130,3 @@ class WorkflowEnv(StrEnum):
     GITHUB_WORKSPACE = 'GITHUB_WORKSPACE'
     GITHUB_ACTION = 'GITHUB_ACTION'
     GITHUB_ACTION_PATH = 'GITHUB_ACTION_PATH'
-
-
-# YAML 1.2 boolean values (case-insensitive)
-

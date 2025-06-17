@@ -183,7 +183,7 @@ class TestWhich:
         exe.write_text("x")
         monkeypatch.setenv("PATH", str(tmp_path))
         monkeypatch.setenv("PATHEXT", ".EXE")
-        assert aio.which("app", check=True).lower().endswith(".exe")
+        assert aio.which("app", check=True).lower().endswith(".exe") # type: ignore[no-any-return]
 
     @pytest.mark.skipif(OS_WIN, reason="POSIX exec bits")
     def test_which_posix_exec(self, tmp_path: Path, monkeypatch):
@@ -196,27 +196,6 @@ class TestWhich:
         assert aio.which("x") is None
         with pytest.raises(aio.ActionIOError):
             aio.which("x", check=True)
-
-
-class TestStatFileStat:
-    def test_stat_file_properties(self, tmp_path: Path) -> None:
-        f = tmp_path / "f"
-        f.write_text("0123")
-        fs: aio.FileStat = aio.stat(f)
-        assert fs.byte_size == 4
-        assert fs.is_file and not fs.is_dir, "Should be a file"
-        perm_octal = fs.get_perm_octal()
-        assert (
-            perm_octal.isdigit() and len(perm_octal) == 4
-        ), "Should be a 4-digit octal string"
-        assert isinstance(fs.mtime, float), "Modification time should be a float"
-
-    def test_stat_symlink(self, tmp_path: Path) -> None:
-        f, l = tmp_path / "f", tmp_path / "l"
-        f.write_text("x")
-        l.symlink_to(f)
-        sy_fs = aio.stat(l, follow_symlinks=False)
-        assert sy_fs.is_symlink
 
 
 class TestTouch:

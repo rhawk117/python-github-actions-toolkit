@@ -10,7 +10,6 @@ import stat
 import pwd
 import grp
 import platform
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -27,20 +26,23 @@ class TestFileStatFromPath:
         f.write_text("hello")
         fs = FileStat.path(f)
         st = fs.get()
+
         assert isinstance(st, os.stat_result)
-        assert fs.byte_size == st.st_size == 5
+        assert fs.byte_size == st.st_size == 5, 'unexpected file size'
+
         for attr in ("mtime", "atime"):
             dt = getattr(fs, attr)
             assert isinstance(dt, datetime)
             assert dt.tzinfo is timezone.utc
             assert abs(dt.timestamp() - getattr(st, f"st_{attr}")) < 0.001
-        if hasattr(st, "st_birthtime"):
-            ct = fs.ctime
-            assert isinstance(ct, datetime)
-            assert ct.tzinfo is timezone.utc
-            assert abs(ct.timestamp() - st.st_birthtime) < 0.001
-        else:
+
+        if not hasattr(st, "st_birthtime"):
             pytest.skip("st_birthtime not supported on this platform")
+
+        ct = fs.ctime
+        assert isinstance(ct, datetime)
+        assert ct.tzinfo is timezone.utc
+        assert abs(ct.timestamp() - st.st_birthtime) < 0.001
 
     def test_path_directory(self, tmp_path: Path):
         d = tmp_path / "d"
