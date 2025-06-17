@@ -1,23 +1,17 @@
-import os
 import platform
-import stat as _stat
-import tempfile
 import time
 from pathlib import Path
 
 import pytest
 
 import action_toolkit.io as aio
-from action_toolkit.io import ActionIOError, FileStat
 
 OS_WIN = platform.system() == "Windows"
 OS_POSIX = not OS_WIN
 
 
 def forge_structure(root: Path) -> None:
-    """
-    Create a mixed hierarchy: nested dirs, files, binary, and a symlink.
-    """
+    '''creates a mixed hierarchy: nested dirs, files, binary, and a symlink.'''
     (root / "dir1").mkdir()
     (root / "dir1" / "file1.txt").write_text("hello")
     (root / "dir2").mkdir()
@@ -34,7 +28,6 @@ def make_executable(path: Path) -> Path:
     Returns the actual file path used.
     """
     if OS_POSIX:
-        path.write_text("#!/bin/sh")
         path.chmod(0o755)
         return path
     else:
@@ -43,7 +36,6 @@ def make_executable(path: Path) -> Path:
         return bat
 
 
-# ---------------------------- COPY ---------------------------- #
 class TestCopy:
     def test_copy_file_to_new(self, tmp_path: Path):
         src = tmp_path / "a.txt"
@@ -62,7 +54,6 @@ class TestCopy:
         assert (dest_dir / "x" / "f.txt").read_text() == "f"
 
     def test_copy_dir_into_existing_dir_merges(self, tmp_path: Path):
-        # existing dest dir should merge contents
         src = tmp_path / "s"
         (src / "a.txt").write_text("1")
         dst = tmp_path / "d"
@@ -94,15 +85,14 @@ class TestCopy:
         src.write_text("x")
         dst = tmp_path / "d"
         dst.mkdir()
-        with pytest.raises(ActionIOError):
+        with pytest.raises(aio.ActionIOError):
             aio.copy(src, dst)
 
     def test_copy_missing_src(self, tmp_path: Path):
-        with pytest.raises(ActionIOError):
+        with pytest.raises(aio.ActionIOError):
             aio.copy(tmp_path / "no", tmp_path / "out")
 
 
-# ---------------------------- MOVE ---------------------------- #
 class TestMove:
     def test_move_file_basic(self, tmp_path: Path):
         src, dst = tmp_path / "a", tmp_path / "b"
@@ -123,7 +113,7 @@ class TestMove:
         dst = tmp_path / "b"
         src.write_text("X")
         dst.write_text("Y")
-        with pytest.raises(ActionIOError):
+        with pytest.raises(aio.ActionIOError):
             aio.move(src, dst, overwrite=False)
 
     def test_move_dir_to_new_parent(self, tmp_path: Path):
@@ -139,7 +129,6 @@ class TestMove:
             aio.move(tmp_path / "no", tmp_path / "d")
 
 
-# ---------------------------- REMOVE ---------------------------- #
 class TestRemove:
     def test_remove_file(self, tmp_path: Path):
         f = tmp_path / "f"
@@ -170,7 +159,6 @@ class TestRemove:
         assert f.exists() and not l.exists()
 
 
-# --------------------------- MKDIR_P -------------------------- #
 class TestMkdirP:
     def test_mkdir_new(self, tmp_path: Path):
         p = tmp_path / "a" / "b"
@@ -184,10 +172,9 @@ class TestMkdirP:
             aio.mkdir_p(f)
 
 
-# --------------------------- WHICH ---------------------------- #
 class TestWhich:
     def test_which_empty_tool(self):
-        with pytest.raises(ActionIOError):
+        with pytest.raises(aio.ActionIOError):
             aio.which("")
 
     @pytest.mark.skipif(OS_POSIX, reason="Windows PATHEXT")
@@ -207,11 +194,10 @@ class TestWhich:
     def test_which_notfound(self, monkeypatch):
         monkeypatch.setenv("PATH", "")
         assert aio.which("x") is None
-        with pytest.raises(ActionIOError):
+        with pytest.raises(aio.ActionIOError):
             aio.which("x", check=True)
 
 
-# ---------------------------- STAT ---------------------------- #
 class TestStatFileStat:
     def test_stat_file_properties(self, tmp_path: Path) -> None:
         f = tmp_path / "f"
@@ -233,7 +219,6 @@ class TestStatFileStat:
         assert sy_fs.is_symlink
 
 
-# ---------------------------- TOUCH --------------------------- #
 class TestTouch:
     def test_touch_creates_and_updates(self, tmp_path: Path):
         p = tmp_path / "t"
@@ -329,7 +314,7 @@ class TestUniquePath:
         base.write_text("x")
         for i in range(1, 4):
             (tmp_path / f"l_{i}").write_text("x")
-        with pytest.raises(ActionIOError):
+        with pytest.raises(aio.ActionIOError):
             aio.unique_path(base, limit=3)
 
 
@@ -371,7 +356,6 @@ class TestEnvHelpers:
         assert aio.get_pathext_extensions() == [".X", ".Y"]
 
 
-# ----------------------- EXECUTABLE BIT -------------------- #
 class TestExecBit:
     @pytest.mark.skipif(OS_WIN, reason="POSIX only")
     def test_exec_true(self, tmp_path: Path):
@@ -387,7 +371,6 @@ class TestExecBit:
         assert not aio.is_unix_executable(f.stat())
 
 
-# ----------------------- ATOMIC WRITE ---------------------- #
 class TestAtomicWrite:
     def test_atomic_write_text_and_binary(self, tmp_path: Path):
         f = tmp_path / "a"
@@ -404,7 +387,6 @@ class TestAtomicWrite:
         assert f.read_text() == "z" and not any(td.iterdir())
 
 
-# ---------------------- FULL EXPORT ----------------------- #
 def test_all_exported():
     public = {name for name in dir(aio) if not name.startswith("_")}
     assert set(aio.__all__) <= public

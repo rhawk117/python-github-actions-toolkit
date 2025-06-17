@@ -147,14 +147,13 @@ class TestOwnerGroup:
         uid = fs.uid
         gid = fs.gid
         # Should match system resolution
-        assert fs.owner == pwd.getpwuid(uid).pw_name
-        assert fs.group == grp.getgrgid(gid).gr_name
+        assert fs.owner == pwd.getpwuid(uid).pw_name # type: ignore[attr-defined]
+        assert fs.group == grp.getgrgid(gid).gr_name # type: ignore[attr-defined]
 
     def test_owner_group_fallback(self, tmp_path: Path, monkeypatch):
         f = tmp_path / "o2.txt"
         f.write_text("o2")
         fs = FileStat.path(f)
-        # Simulate missing user
         monkeypatch.setattr(
             "action_toolkit.io.internals.file_stat.pwd.getpwuid",
             lambda uid: (_ for _ in ()).throw(KeyError()),

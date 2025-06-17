@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Self
 
-from action_toolkit.core.path_utils import StringOrPathlib
+from action_toolkit.corelib.types.io import StringOrPathlib
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
