@@ -241,7 +241,7 @@ class TestReadWrite:
     def test_write_append_and_create(self, tmp_path: Path):
         p = tmp_path / "y"
         aio.write(p, "a")
-        aio.write(p, "b", append=True)
+        aio.write(p, "b")
         assert aio.read(p) == "ab"
 
     def test_read_missing_error(self):

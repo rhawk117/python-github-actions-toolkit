@@ -238,21 +238,15 @@ def walk_fast(
     -----
     * Significantly faster than :pyfunc:`pathlib.Path.rglob` on large trees.
     '''
-    stack: list[Path] = [Path(root)]
-    while stack:
-        current = stack.pop()
-        yield current
-        if not current.is_dir():
-            continue
-        with os.scandir(current) as it:
-            for entry in it:
-                try:
-                    path = Path(entry.path)
-                    if entry.is_symlink() and not follow_symlinks:
-                        continue
-                    stack.append(path)
-                except OSError:
-                    continue
+    p = Path(root)
+    yield p
+    if not p.is_dir():
+        return
+    for entry in os.scandir(p):
+        entry_path = Path(entry.path)
+        yield entry_path
+        if entry.is_dir(follow_symlinks=follow_symlinks):
+            yield from walk_fast(entry_path, follow_symlinks=follow_symlinks)
 
 
 def read(path: StringOrPathlib, *, encoding="utf-8") -> str:
@@ -277,17 +271,16 @@ def write(
     path: StringOrPathlib,
     content: str,
     *,
-    append: bool = False,
-    encoding: str = "utf-8"
-) -> None:
-    mode = "a" if append else "w"
+    encoding: str = 'utf-8'
+) -> Path:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    if mode == 'a' and not p.exists():
-        p.write_text(content, encoding=encoding)
+    if p.exists():
+        existing = p.read_text(encoding)
+        p.write_text(existing + content, encoding=encoding)
     else:
-        p.write_text(p.read_text(encoding) + content, encoding=encoding)
-
+        p.write_text(content, encoding=encoding)
+    return p
 
 def split_extmulti(path: StringOrPathlib, *, levels: int = 2) -> tuple[str, str]:
     """
@@ -346,41 +339,28 @@ def unique_path(path: StringOrPathlib, *, sep: str = '_', limit: int = 100) -> P
 
     return result
 
-def chmod_perm(path: StringOrPathlib, perm: str) -> None:
-    """
-    Allows for setting permissions in both symbolic or octal notation.
-
-    Parameters
-    ----------
-    path : StringOrPathlib
-        The file or directory path.
-    mode : int
-        The permission mode to set (e.g., 0o755).
-
-    Examples
-    --------
-    >>> chmod_perm('example.txt', '644')  # Sets permissions to -rw-r--r--
-    >>> chmod_perm('example.sh', 'rwxr-xr-x')  # Sets permissions to -rwxr-xr-x
-    """
+def chmod_perm(path: StringOrPathlib, mode: str | int) -> None:
     p = Path(path)
-    if perm.isdigit():
-        mode = int(perm, 8)
-        os.chmod(p, mode)
+    if isinstance(mode, int):
+        p.chmod(mode)
         return
-    flags = (
-        (_stat.S_IRUSR, 'r'), (_stat.S_IWUSR, 'w'), (_stat.S_IXUSR, 'x'),
-        (_stat.S_IRGRP, 'r'), (_stat.S_IWGRP, 'w'), (_stat.S_IXGRP, 'x'),
-        (_stat.S_IROTH, 'r'), (_stat.S_IWOTH, 'w'), (_stat.S_IXOTH, 'x'),
-    )
-    mode = 0
-    for bit, ch in flags:
-        if not ch in perm[:len(flags)]:
-            continue
-        idx = perm.index(ch)
-        if perm[idx] != '-':
-            mode |= bit
 
-    os.chmod(p, mode)
+    if len(mode) != 9 or any(c not in 'rwx-' for c in mode):
+        raise ValueError(f'Invalid symbolic mode: {mode}')
+
+    def _triplet(trip: str) -> int:
+        v = 0
+        if trip[0] == 'r': v |= 4
+        if trip[1] == 'w': v |= 2
+        if trip[2] == 'x': v |= 1
+        return v
+
+    owner = _triplet(mode[0:3])
+    group = _triplet(mode[3:6])
+    other = _triplet(mode[6:9])
+    oct_mode = (owner << 6) | (group << 3) | other
+    p.chmod(oct_mode)
+
 
 def get_pathext_extensions() -> list[str]:
     '''Gets the PATHEXT environment variable extensions.
@@ -447,15 +427,23 @@ def atomic_write(
         Final path.
     '''
     dst = Path(path)
-    tmp_dir = Path(tmp_dir) if tmp_dir else dst.parent
-    fd, tmp_name = tempfile.mkstemp(dir=tmp_dir, prefix=f'.{dst.name}.')
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    work_dir = Path(tmp_dir) if tmp_dir else dst.parent
+
+    fd, tmp_name = tempfile.mkstemp(dir=work_dir, prefix=f'.{dst.name}.')
     tmp_path = Path(tmp_name)
     try:
-        with os.fdopen(fd, mode, encoding=encoding) as fh:
+        if 'b' in mode:
+            fh = os.fdopen(fd, mode)
+        else:
+            fh = os.fdopen(fd, mode, encoding=encoding)
+        with fh:
             fh.write(data)
             fh.flush()
             os.fsync(fh.fileno())
         os.replace(tmp_path, dst)
     finally:
-        tmp_path.unlink(missing_ok=True)
-    return dst.resolve()
+        if tmp_path.exists():
+            tmp_path.unlink()
+
+    return dst
