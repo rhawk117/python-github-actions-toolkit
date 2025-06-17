@@ -6,6 +6,7 @@ This module provides utility functions for converting values and properties
 from strings to command values, handling annotations, and parsing inputs.
 '''
 from __future__ import annotations
+from action_toolkit.corelib.types.core import YAML_BOOLEAN_FALSE, YAML_BOOLEAN_TRUE
 
 
 
@@ -56,7 +57,6 @@ def parse_yaml_boolean(value: str) -> bool:
     >>> parse_boolean('anything else')
     False
     '''
-    from .interfaces import YAML_BOOLEAN_TRUE
     return value.lower() in YAML_BOOLEAN_TRUE
 
 
