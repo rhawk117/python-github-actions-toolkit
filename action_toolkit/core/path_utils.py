@@ -187,41 +187,28 @@ def is_absolute(path: StringOrPathlib) -> bool:
     return Path(path).is_absolute()
 
 
-def get_relative_path(from_path: str | Path, to_path: str | Path) -> str:
+def get_relative_path(
+    target: StringOrPathlib,
+    base: StringOrPathlib
+) -> str:
     '''
-    Get the relative path from base to path.
+    Get the relative path from a target to a base directory.
 
     Parameters
     ----------
-    path : Union[str, Path]
-        The target path.
-    base : Union[str, Path]
-        The base path to calculate relative from.
+    target : StringOrPathlib
+    base : StringOrPathlib
 
     Returns
     -------
     str
-        The relative path from base to path.
-
-    Raises
-    ------
-    ValueError
-        If the paths have different anchors (e.g., different drives
-        on Windows) and cannot be made relative.
-
-    Examples
-    --------
-    >>> get_relative_path('/home/user/docs/file.txt', '/home/user')
-    'docs/file.txt'
-
-    >>> get_relative_path('/home/user', '/home/user/docs')
-    '..'
+        _relative path_
     '''
-    from_path = Path(from_path).resolve()
-    to_path = Path(to_path).resolve()
-
+    t = Path(target).resolve(strict=False)
+    b = Path(base).resolve(strict=False)
     try:
-        rel_path = to_path.relative_to(from_path)
-        return str(rel_path).replace('\\', '/')
+        return str(t.relative_to(b))
     except ValueError:
-        return str(to_path).lstrip('/').replace('\\', '/')
+        anchor = Path(t.anchor)
+        parts_after_anchor = t.parts[len(anchor.parts):]
+        return Path(*parts_after_anchor).as_posix()

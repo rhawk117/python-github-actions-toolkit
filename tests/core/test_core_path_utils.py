@@ -247,9 +247,7 @@ class TestGetRelativePath:
 
     def test_basic_relative_path(self):
         '''Test basic relative path calculation'''
-        assert get_relative_path(
-            'C:\\Users\\test\\file.txt', 'C:\\Users') == os.path.join(
-                'test', 'file.txt')
+        assert get_relative_path('C:\\Users\\test\\file.txt', 'C:\\Users') == os.path.join('test', 'file.txt')
 
     def test_same_path(self):
         '''Test relative path when paths are the same'''

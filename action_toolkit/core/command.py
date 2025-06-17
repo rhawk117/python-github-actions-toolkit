@@ -259,7 +259,8 @@ def add_path(*, path: StringOrPathlib) -> None:
     os.environ["PATH"] = f"{path_str}{os.pathsep}{current_path}"
 
     path_file = os.environ.get(WorkflowEnv.GITHUB_PATH, None)
-    if path_file:
+    if path_file and os.path.exists(path_file):
+        os.makedirs(os.path.dirname(path_file), exist_ok=True)
         with open(path_file, "a", encoding="utf-8") as f:
             f.write(path_str + os.linesep)
     else:
