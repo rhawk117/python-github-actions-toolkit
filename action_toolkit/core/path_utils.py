@@ -12,10 +12,10 @@ from pathlib import Path
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .internals.types import StringOrPath
+    from action_toolkit.corelib.types.io import StringOrPathlib
 
 
-def to_posix_path(path: StringOrPath) -> str:
+def to_posix_path(path: StringOrPathlib) -> str:
     '''
     Convert a path to POSIX format (forward slashes).
 
@@ -24,7 +24,7 @@ def to_posix_path(path: StringOrPath) -> str:
 
     Parameters
     ----------
-    path : StringOrPath
+    path : StringOrPathlib
         The path to convert.
 
     Returns
@@ -50,7 +50,7 @@ def to_posix_path(path: StringOrPath) -> str:
     return path.replace('\\', '/')
 
 
-def to_win32_path(path: StringOrPath) -> str:
+def to_win32_path(path: StringOrPathlib) -> str:
     '''
     Convert a path to Windows format (backslashes).
 
@@ -86,7 +86,7 @@ def to_win32_path(path: StringOrPath) -> str:
     return normalized.replace('/', '\\')
 
 
-def to_platform_path(path: StringOrPath) -> str:
+def to_platform_path(path: StringOrPathlib) -> str:
     '''
     Convert a path to the current platform's format.
 
@@ -95,7 +95,7 @@ def to_platform_path(path: StringOrPath) -> str:
 
     Parameters
     ----------
-    path : StringOrPath
+    path : StringOrPathlib
         The path to convert.
 
     Returns
@@ -122,7 +122,7 @@ def to_platform_path(path: StringOrPath) -> str:
         return to_posix_path(path)
 
 
-def normalize_path(path: StringOrPath) -> str:
+def normalize_path(path: StringOrPathlib) -> str:
     '''
     Normalize a path for the current platform of the Action runner.
 
@@ -159,7 +159,7 @@ def normalize_path(path: StringOrPath) -> str:
     return str(p)
 
 
-def is_absolute(path: StringOrPath) -> bool:
+def is_absolute(path: StringOrPathlib) -> bool:
     '''
     Check if a path is absolute.
 
@@ -187,7 +187,7 @@ def is_absolute(path: StringOrPath) -> bool:
     return Path(path).is_absolute()
 
 
-def join_path(*paths: StringOrPath) -> str:
+def join_path(*paths: StringOrPathlib) -> str:
     '''
     Join path components intelligently.
 
@@ -222,7 +222,7 @@ def join_path(*paths: StringOrPath) -> str:
     return str(result)
 
 
-def get_relative_path(path: StringOrPath, base: StringOrPath) -> str:
+def get_relative_path(path: StringOrPathlib, base: StringOrPathlib) -> str:
     '''
     Get the relative path from base to path.
 

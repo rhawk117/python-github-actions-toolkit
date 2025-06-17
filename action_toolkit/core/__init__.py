@@ -16,7 +16,7 @@ from .command import (
     end_group,
     group
 )
-from .internals.types import (
+from .internals.interfaces import (
     AnnotationProperties,
     WorkflowCommand,
     WorkflowEnv

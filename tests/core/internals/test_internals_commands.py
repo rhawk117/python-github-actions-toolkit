@@ -18,7 +18,7 @@ from action_toolkit.core.internals.commands import (
     issue_file_command,
     prepare_key_value_message
 )
-from action_toolkit.core.internals.types import WorkflowCommand, AnnotationProperties
+from action_toolkit.core.internals.interfaces import WorkflowCommand, AnnotationProperties
 
 
 class TestToCommandValue:
@@ -61,7 +61,7 @@ class TestToCommandValue:
                 return 'custom_string'
 
         obj = CustomObject()
-        assert to_command_value(input=obj) == 'custom_string'
+        assert to_command_value(input=obj) == 'custom_string' # type: ignore[return-value]
 
 
 class TestToCommandProperties:

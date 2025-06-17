@@ -56,7 +56,7 @@ def parse_yaml_boolean(value: str) -> bool:
     >>> parse_boolean('anything else')
     False
     '''
-    from .types import YAML_BOOLEAN_TRUE
+    from .interfaces import YAML_BOOLEAN_TRUE
     return value.lower() in YAML_BOOLEAN_TRUE
 
 

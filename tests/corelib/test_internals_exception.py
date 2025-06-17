@@ -1,7 +1,7 @@
 '''Tests for action_toolkit.internals.exception module'''
 
 import pytest
-from action_toolkit.internals.exception import BaseActionError
+from action_toolkit.corelib.exception import BaseActionError
 
 
 class TestBaseActionError:

@@ -1,6 +1,6 @@
 
 
-from ..internals.exception import BaseActionError
+from action_toolkit.corelib.exception import BaseActionError
 
 
 class ActionIOError(BaseActionError):

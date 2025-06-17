@@ -9,21 +9,24 @@ https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow
 """
 
 from __future__ import annotations
+from logging import warn
 import os
 import sys
 import warnings
 from contextlib import contextmanager
 
+from typing import TYPE_CHECKING
 from .internals import commands
-from .internals.types import (
+from .internals.interfaces import (
     ExitCode,
     AnnotationProperties,
-    StringOrException,
-    StringOrPath,
     WorkflowCommand,
-    WorkflowEnv,
-    IOValue
+    WorkflowEnv
 )
+
+if TYPE_CHECKING:
+    from action_toolkit.corelib.types.core import StringOrException
+    from action_toolkit.corelib.types.io import IOValue, StringOrPathlib
 
 
 def set_output(*, name: str, value: IOValue) -> None:
@@ -59,6 +62,13 @@ def set_output(*, name: str, value: IOValue) -> None:
             file_path=output_file
         )
     else:
+        warnings.warn(
+            "Could not find GITHUB_OUTPUT environment variable, "
+            "and had to use set-output command instead. This approach is deprecated and "
+            "could not longer be functioning.",
+            category=RuntimeWarning,
+            stacklevel=2
+        )
         commands.issue_command(
             command=WorkflowCommand.SET_OUTPUT,
             properties={"name": name},
@@ -218,7 +228,7 @@ def set_secret(*, secret: str | IOValue) -> None:
         )
 
 
-def add_path(*, path: StringOrPath) -> None:
+def add_path(*, path: StringOrPathlib) -> None:
     """
     Prepend a directory to the system PATH.
 

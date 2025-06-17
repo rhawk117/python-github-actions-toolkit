@@ -1,15 +1,13 @@
 '''Tests for core.internals.types module'''
 
 import pytest
-from action_toolkit.core.internals.types import (
+from action_toolkit.core.internals.interfaces import (
     WorkflowCommand,
     AnnotationProperties,
-    WorkflowEnv,
-    YAML_BOOLEAN_TRUE,
-    YAML_BOOLEAN_FALSE
+    WorkflowEnv
 )
 from action_toolkit.core.internals.exceptions import AnnotationError
-
+from action_toolkit.corelib.types.core import YAML_BOOLEAN_TRUE, YAML_BOOLEAN_FALSE
 
 
 

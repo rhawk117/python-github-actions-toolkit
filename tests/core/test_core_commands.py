@@ -25,7 +25,7 @@ from action_toolkit.core.command import (
     end_group,
     group
 )
-from action_toolkit.core.internals.types import WorkflowEnv, AnnotationProperties
+from action_toolkit.core.internals.interfaces import WorkflowEnv, AnnotationProperties
 
 
 class TestSetOutput:

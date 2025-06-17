@@ -1,8 +1,7 @@
 '''
-**io.internals.io_util**
+**io.io_util**
 Low-level file system utilities for the IO toolkit that are non-blocking,
 awaitable and platform-agnostic.
-
 '''
 
 from __future__ import annotations
@@ -15,14 +14,13 @@ import warnings
 import shutil
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Final, Optional, TypeAlias
-from .async_fs import AsyncFileSystem
-
+from typing import Any, Final
+from .async_fs import async_fs
+from ..corelib.types import FilePath
 
 _fs = AsyncFileSystem()
 
-FilePath: TypeAlias = str | bytes | os.PathLike[str] | os.PathLike[bytes]
-StringPath: TypeAlias = str | os.PathLike[str]
+
 IS_WINDOWS: Final[bool] = sys.platform == 'win32'
 
 
@@ -389,7 +387,7 @@ def normalize_separators(p: str) -> str:
 
 def is_unix_executable(stats: os.stat_result) -> bool:
     '''
-    Check if file is executable on Unix, I have no clue 
+    Check if file is executable on Unix, I have no clue
     what the fancy bits are (lol)
 
     Parameters

@@ -6,12 +6,18 @@ Abstracts the command handling functionality for GitHub Actions.
 '''
 from __future__ import annotations
 
+
 import os
 import sys
 import json
 from typing import TYPE_CHECKING, Any, Literal, TextIO, Final
-from action_toolkit.internals import dataclass_utils
-from .types import AnnotationProperties, WorkflowCommand, CommandValue, CommandPropertyValue
+
+from action_toolkit.corelib.utils import dataclass_utils
+from .interfaces import AnnotationProperties, WorkflowCommand
+
+
+if TYPE_CHECKING:
+    from action_toolkit.corelib.types.core import CommandValue, CommandPropertyValue
 
 CMD_STRING: Final[str] = '::'
 
@@ -73,27 +79,21 @@ def to_command_value(*, input: CommandValue) -> str:
 
 
 def to_command_properties(annotation_properties: AnnotationProperties) -> dict[str, CommandPropertyValue]:
-    command_props: dict[str, CommandPropertyValue] = {}
-
-    if annotation_properties.title is not None:
-        command_props['title'] = annotation_properties.title
-
-    if annotation_properties.file is not None:
-        command_props['file'] = annotation_properties.file
+    # 'startLine', # should be mapped to 'line'
+    # 'startColumn', # should be mapped to 'col'
+    cmd_props = dataclass_utils.dump_dataclass(
+        annotation_properties,
+        exclude_none=True,
+        exclude={'startLine', 'startColumn'}
+    )
 
     if annotation_properties.startLine is not None:
-        command_props['line'] = annotation_properties.startLine  # Map startLine -> line
-
-    if annotation_properties.endLine is not None:
-        command_props['endLine'] = annotation_properties.endLine
+        cmd_props['line'] = annotation_properties.startLine
 
     if annotation_properties.startColumn is not None:
-        command_props['col'] = annotation_properties.startColumn  # Map startColumn -> col
+        cmd_props['col'] = annotation_properties.startColumn
 
-    if annotation_properties.endColumn is not None:
-        command_props['endColumn'] = annotation_properties.endColumn
-
-    return command_props
+    return cmd_props
 
 def escape_data(s: Any) -> str:
     '''

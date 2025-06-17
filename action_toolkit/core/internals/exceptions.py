@@ -2,7 +2,7 @@
 **core.internals.exceptions**
 exceptions for the GitHub Actions toolkit core package.
 '''
-from action_toolkit.internals.exception import BaseActionError
+from action_toolkit.corelib.exception import BaseActionError
 
 INPUT_EXC_FORMAT = 'InputError: Input "{input_name}" with value "{input_value}" is invalid. {reason}.'
 
