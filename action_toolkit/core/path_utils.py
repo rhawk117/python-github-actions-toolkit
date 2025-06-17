@@ -187,7 +187,7 @@ def is_absolute(path: StringOrPathlib) -> bool:
     return Path(path).is_absolute()
 
 
-def get_relative_path(path: StringOrPathlib, base: StringOrPathlib) -> str:
+def get_relative_path(from_path: str | Path, to_path: str | Path) -> str:
     '''
     Get the relative path from base to path.
 
@@ -217,13 +217,11 @@ def get_relative_path(path: StringOrPathlib, base: StringOrPathlib) -> str:
     >>> get_relative_path('/home/user', '/home/user/docs')
     '..'
     '''
-    path = Path(path).resolve()
-    base = Path(base).resolve()
+    from_path = Path(from_path).resolve()
+    to_path = Path(to_path).resolve()
+
     try:
-        return str(path.relative_to(base))
+        rel_path = to_path.relative_to(from_path)
+        return str(rel_path).replace('\\', '/')
     except ValueError:
-        if path.anchor != base.anchor:
-            raise ValueError(
-                f"Cannot make '{path}' relative to '{base}' due to different anchors."
-            )
-        return str(path)
+        return str(to_path).lstrip('/').replace('\\', '/')
