@@ -180,7 +180,7 @@ class FileStat:
         str
             _the string representation_
         '''
-        kind = 'dir' if self.is_dir else 'link' if self.is_symlink else 'file'
+        kind = 'dir' if self.is_dir() else 'link' if self.is_symlink() else 'file'
         owner = f'{self.owner}:{self.group}'
-        return f'<{kind} {self.permission_str()} {owner} {self.size_human} ' \
+        return f'<{kind} {self.permission_str()} {owner} {self.size_human()} ' \
                f'{self._path or ""}>'
