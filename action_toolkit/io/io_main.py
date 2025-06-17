@@ -30,7 +30,7 @@ def cp(
     dest: str | Path,
     recursive: bool = False,
     force: bool = True,
-    copy_src_dir: bool = True
+    copy_src_dir: bool = True,
 ) -> None:
     '''
     Copy a file or folder.
@@ -43,12 +43,16 @@ def cp(
         Source path to copy from.
     dest : Union[str, Path]
         Destination path to copy to.
-    options : Optional[CopyOptions]
-        Copy options. Defaults to CopyOptions() if not provided.
+    recursive : bool, optional
+        Whether to copy directories recursively, by default False
+    force : bool, optional
+        Whether to overwrite existing files, by default True
+    copy_src_dir : bool, optional
+        Whether to copy source directory into destination, by default True
 
     Raises
     ------
-    IOError
+    ActionIOError
         If source doesn't exist or recursive copy attempted without recursive flag.
 
     Examples
@@ -57,18 +61,10 @@ def cp(
     >>> cp(source='file.txt', dest='backup.txt')
 
     >>> # Copy directory recursively
-    >>> cp(
-    ...     source='src_dir',
-    ...     dest='dest_dir',
-    ...     options=CopyOptions(recursive=True)
-    ... )
+    >>> cp(source='src_dir', dest='dest_dir', recursive=True)
 
     >>> # Copy without overwriting
-    >>> cp(
-    ...     source='file.txt',
-    ...     dest='existing.txt',
-    ...     options=CopyOptions(force=False)
-    ... )
+    >>> cp(source='file.txt', dest='existing.txt', force=False)
     '''
 
     src = Path(source).resolve()
@@ -77,8 +73,8 @@ def cp(
     if not src.exists():
         raise ActionIOError(f'no such file or directory: {source}')
 
-    if not dst.exists():
-        if not dst.exists() and not force:
+    if dst.exists():
+        if dst.is_file() and not force:
             return
 
         if dst.is_dir() and src.is_dir() and copy_src_dir:
@@ -86,7 +82,7 @@ def cp(
 
     if src.is_dir():
         if not recursive:
-            raise IOError(
+            raise ActionIOError(
                 f'Failed to copy. {source} is a directory, but tried to copy without recursive flag.'
             )
         copy_dir_recursive(
@@ -97,16 +93,13 @@ def cp(
         return
 
     if dst.exists() and src.samefile(dst):
-        # a file cannot be copied to itself
-        raise IOError(f"'{dst}' and '{src}' are the same file")
+        raise ActionIOError(f"'{dst}' and '{src}' are the same file")
 
-    copy_file(
+    copyfile(
         src=src,
         dest=dst,
         force=force
     )
-
-
 
 
 def mv(
@@ -115,10 +108,26 @@ def mv(
     *,
     force: bool = True
 ) -> None:
+    '''
+    Move a file or directory.
+
+    Parameters
+    ----------
+    source : Union[str, Path]
+        Source path to move from.
+    dest : Union[str, Path]
+        Destination path to move to.
+    force : bool, optional
+        Whether to overwrite existing files, by default True
+
+    Raises
+    ------
+    ActionIOError
+        If source doesn't exist or destination exists and force=False.
+    '''
 
     src = Path(source).resolve()
     dst = Path(dest).resolve()
-
 
     if not src.exists():
         raise ActionIOError(f'no such file or directory: {source}')
@@ -126,15 +135,16 @@ def mv(
     dst_exists = dst.exists()
     if dst_exists and dst.is_dir():
         dst = dst / src.name
+        dst_exists = dst.exists()  # Re-check after adjusting path
 
     if dst_exists:
         if not force:
             raise ActionIOError(
                 f'cannot move {source} to {dest}. Destination already exists.'
             )
-        rm_rf(path=dst) # remove destination if it exists first
+        rm_rf(path=dst)  # remove destination if it exists first
 
-    mkdir_p(path=dst.parent) # ensure parent directory exists
+    mkdir_p(path=dst.parent)  # ensure parent directory exists
 
     try:
         src.rename(dst)
@@ -143,7 +153,6 @@ def mv(
             f'could not move {source} to {dest}',
             cause=e
         ) from e
-
 
 
 def rm_rf(path: str | Path) -> None:
@@ -157,7 +166,7 @@ def rm_rf(path: str | Path) -> None:
 
     Raises
     ------
-    IOError
+    ActionIOError
         If path contains invalid characters on Windows or removal fails.
 
     Examples
@@ -172,10 +181,9 @@ def rm_rf(path: str | Path) -> None:
     path_str = str(path)
 
     if fs_utils.IS_WINDOWS and any(char in path_str for char in '*"<>|'):
-        raise IOError(
+        raise ActionIOError(
             f'Invalid characters in path: {path_str}. '
-            'Windows does not allow these characters in file or directory names.',
-            path_str
+            'Windows does not allow these characters in file or directory names.'
         )
 
     if not fp.exists():
@@ -190,7 +198,7 @@ def rm_rf(path: str | Path) -> None:
         raise ActionIOError(
             f'could not remove {path_str}',
             cause=e
-        )
+        ) from e
 
 
 def mkdir_p(path: StringOrPathlib) -> None:
@@ -204,8 +212,8 @@ def mkdir_p(path: StringOrPathlib) -> None:
 
     Raises
     ------
-    ValueError
-        If path is empty.
+    ActionIOError
+        If path is empty or creation fails.
 
     Examples
     --------
@@ -213,7 +221,7 @@ def mkdir_p(path: StringOrPathlib) -> None:
     >>> mkdir_p(path='path/to/nested/dir')
     '''
     if not path:
-        raise ValueError("parameter 'path' is required")
+        raise ActionIOError("parameter 'path' is required")
 
     try:
         Path(path).mkdir(parents=True, exist_ok=True)
@@ -222,6 +230,7 @@ def mkdir_p(path: StringOrPathlib) -> None:
             f'could not create directory {path}',
             cause=e
         ) from e
+
 
 def which(tool: str, *, check: bool = False) -> str:
     '''
@@ -242,9 +251,9 @@ def which(tool: str, *, check: bool = False) -> str:
 
     Raises
     ------
-    ValueError
+    ActionIOError
         If tool parameter is empty.
-    IOError
+    ActionIOError
         If check=True and tool is not found.
 
     Examples
@@ -256,7 +265,7 @@ def which(tool: str, *, check: bool = False) -> str:
     >>> git_path = which(tool='git', check=True)
     '''
     if not tool:
-        raise ValueError("parameter 'tool' is required")
+        raise ActionIOError("parameter 'tool' is required")
 
     if check:
         result = which(tool=tool, check=False)
@@ -268,10 +277,11 @@ def which(tool: str, *, check: bool = False) -> str:
                 "Please verify the file path exists or can be found in PATH. "
                 "Also check the file is executable."
             )
-            raise IOError(f"Unable to locate executable: {tool}. {platform_msg}")
+            raise ActionIOError(f"Unable to locate executable: {tool}. {platform_msg}")
+        return result
 
     matches = find_in_path(tool=tool)
-    return str(matches[0]) if matches else ''
+    return matches[0] if matches else ''
 
 
 def find_in_path(*, tool: str) -> list[str]:
@@ -285,12 +295,12 @@ def find_in_path(*, tool: str) -> list[str]:
 
     Returns
     -------
-    list[Path]
+    list[str]
         List of paths where the tool was found.
 
     Raises
     ------
-    ValueError
+    ActionIOError
         If tool parameter is empty.
 
     Examples
@@ -299,7 +309,7 @@ def find_in_path(*, tool: str) -> list[str]:
     >>> pythons = find_in_path(tool='python')
     '''
     if not tool:
-        raise ValueError("parameter 'tool' is required")
+        raise ActionIOError("parameter 'tool' is required")
 
     extensions = fs_utils.get_pathext_extensions() if fs_utils.IS_WINDOWS else []
 
@@ -311,15 +321,16 @@ def find_in_path(*, tool: str) -> list[str]:
         return []
 
     matches = []
-    for paths in fs_utils.iter_path_dirs():
-        inferred_path = Path(paths) / tool
+    for directory in fs_utils.iter_path_dirs():
+        inferred_path = Path(directory) / tool
         exec_path = fs_utils.try_get_executable(
             inferred_path,
             extensions=extensions
         )
         if exec_path:
-            matches.append(str(exec_path))
+            matches.append(exec_path)
     return matches
+
 
 def rm(
     path: str | Path,
@@ -330,43 +341,60 @@ def rm(
     retry_delay: float = 0.0
 ) -> None:
     '''
-    Remove a file or directory.
+    Remove a file or directory with retry logic.
 
     Parameters
     ----------
     path : Union[str, Path]
         Path to remove.
-    force : bool
-        Whether to ignore errors.
-    max_retries : int
-        Maximum number of retry attempts.
-    recursive : bool
-        Whether to remove directories recursively.
-    retry_delay : float
-        Delay between retries in seconds.
+    force : bool, optional
+        Whether to ignore errors, by default False
+    max_retries : int, optional
+        Maximum number of retry attempts, by default 1
+    recursive : bool, optional
+        Whether to remove directories recursively, by default False
+    retry_delay : float, optional
+        Delay between retries in seconds, by default 0.0
+
+    Raises
+    ------
+    ActionIOError
+        If removal fails and force=False
     '''
-    path = Path(path)
+    path_obj = Path(path)
 
     for attempt in range(max_retries):
         try:
-            if recursive and path.is_dir():
-                shutil.rmtree(str(path), ignore_errors=force)
+            if recursive and path_obj.is_dir():
+                shutil.rmtree(str(path_obj), ignore_errors=force)
             else:
-                path.unlink(missing_ok=True)
+                path_obj.unlink(missing_ok=force)
             break
         except Exception as e:
             if not force and attempt == max_retries - 1:
-                raise
+                raise ActionIOError(f"Failed to remove {path}: {e}") from e
             if retry_delay > 0 and attempt < max_retries - 1:
                 time.sleep(retry_delay)
 
 
-def copy_file(
+def copyfile(
     *,
     src: Path,
     dest: Path,
     force: bool = False,
 ) -> None:
+    '''
+    Copy a single file, handling symlinks appropriately.
+
+    Parameters
+    ----------
+    src : Path
+        Source file path
+    dest : Path
+        Destination file path
+    force : bool, optional
+        Whether to overwrite existing files, by default False
+    '''
     dest.parent.mkdir(parents=True, exist_ok=True)
 
     if src.is_symlink():
@@ -394,15 +422,15 @@ def copy_dir_recursive(
     Parameters
     ----------
     src : Path
-        _the source_
+        Source directory path
     dest : Path
-        _the destination_
+        Destination directory path
     force : bool, optional
-        _whether to forcfully copy_, by default False
+        Whether to forcefully copy (overwrite), by default False
     max_depth : int, optional
-        _max recursion depth_, by default 255
+        Maximum recursion depth, by default 255
     current_depth : int, optional
-        _current recursive depth_, by default 0
+        Current recursive depth, by default 0
     '''
     if current_depth > max_depth:
         return
@@ -420,7 +448,7 @@ def copy_dir_recursive(
                 current_depth=current_depth + 1
             )
         else:
-            copy_file(src=item, dest=target, force=force)
+            copyfile(src=item, dest=target, force=force)
 
     try:
         shutil.copystat(src, dest)
@@ -430,8 +458,6 @@ def copy_dir_recursive(
             RuntimeWarning,
             stacklevel=2
         )
-        pass
-
 
 
 def get_cmd_path() -> str:
@@ -454,10 +480,121 @@ def stat(path: str | Path, *, follow_symlinks: bool = True) -> FileStat:
     ----------
     path : Union[str, Path]
         Path to stat.
+    follow_symlinks : bool, optional
+        Whether to follow symbolic links, by default True
 
     Returns
     -------
-    os.stat_result
-        File status information.
+    FileStat
+        File status information wrapper.
     '''
     return FileStat.path(path, follow_symlinks=follow_symlinks)
+
+
+def touch(
+    file_path: StringOrPathlib,
+    *,
+    create_parents: bool = True,
+    exist_ok: bool = True
+) -> None:
+    '''
+    Creates an empty file or updates its timestamp (like touch command).
+
+    Parameters
+    ----------
+    file_path : StringOrPathlib
+        Path to the file to touch
+    create_parents : bool, optional
+        Create parent directories if they don't exist, by default True
+    exist_ok : bool, optional
+        Don't raise error if file already exists, by default True
+
+    Raises
+    ------
+    ActionIOError
+        If file creation fails or file exists and exist_ok=False
+    '''
+    path = Path(file_path)
+
+    if path.exists():
+        if not exist_ok:
+            raise ActionIOError(f"File already exists: {file_path}")
+        path.touch(exist_ok=True)
+        return
+
+    if create_parents:
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        path.touch(exist_ok=exist_ok)
+    except OSError as e:
+        raise ActionIOError(f"Failed to create file '{file_path}'", cause=e) from e
+
+def join(*paths: str) -> Path:
+    '''
+    explicit join function for pathlib.Path
+
+    Parameters
+    ----------
+    *paths : StringOrPathlib
+        Path components to join.
+
+    Returns
+    -------
+    Path
+        Joined path as a Path object.
+    '''
+    return Path(*(p for p in paths))
+
+def read(
+    *parts: str,
+    encoding: str = 'utf-8',
+    errors: str = 'strict',
+    strip_trailing_newline: bool = False
+) -> str:
+    '''
+    Reads and return the contents of a file.
+
+    Parameters
+    ----------
+    *parts: str
+        The file path parts to concatenate, like `os.path.join`.
+    encoding : str, optional
+        Text encoding to use, by default 'utf-8'
+    errors : str, optional
+        How to handle encoding errors, by default 'strict'
+    strip_trailing_newline : bool, optional
+        Whether to strip trailing newline from output, by default False
+
+    Returns
+    -------
+    str
+        The file contents
+
+    Raises
+    ------
+    ActionIOError
+        If no files provided or file cannot be read
+
+    Examples
+    --------
+    >>> # Read a file
+    >>> content = read('path', 'to', 'file.txt')
+    >>> print(content)
+    '''
+    path = os.path.join(*parts)
+
+    if not path or not os.path.exists(path):
+        raise ActionIOError(f'No files provided or file does not exist: {path}')
+
+    try:
+        with open(path, 'r', encoding=encoding, errors=errors) as file:
+            result = file.read()
+    except OSError as e:
+        raise ActionIOError(f'Error reading file {path}: {e}') from e
+
+    if strip_trailing_newline and result.endswith('\n'):
+        result = result.rstrip('\n')
+
+    return result
+

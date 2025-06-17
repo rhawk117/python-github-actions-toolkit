@@ -20,22 +20,6 @@ from action_toolkit.io.internals.exceptions import ActionIOError
 
 IS_WINDOWS = sys.platform == 'win32'
 
-def pathlib_join(*paths: StringOrPathlib) -> Path:
-    '''
-    Join multiple path components into a single Path object.
-
-    Parameters
-    ----------
-    *paths : StringOrPathlib
-        Path components to join.
-
-    Returns
-    -------
-    Path
-        Joined path as a Path object.
-    '''
-    return Path(*(str(p) for p in paths))
-
 
 
 def is_directory(
@@ -93,7 +77,7 @@ def is_rooted(p: str) -> bool:
     if IS_WINDOWS:
         return (
             p.startswith('\\') or  # e.g. \ or \hello or \\hello
-            (len(p) > 2 and p[1:3] == ':\\')  # e.g. C: or C:\hello
+            (len(p) >= 2 and p[1:3] == ':\\')  # e.g. C: or C:\hello - Fixed condition
         )
 
     return p.startswith('/')
@@ -121,18 +105,13 @@ def normalize_separators(p: str) -> str:
     return os.path.normpath(p)
 
 
-
-
 def is_unix_executable(stats: os.stat_result) -> bool:
-    """Check if file has executable permissions on Unix systems."""
+    '''Check if file has executable permissions on Unix systems.'''
     return bool(stats.st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
 
-# **********************
-#  try_get_executable utils
-# ***********************
 
 def _get_file_stats(file_path: Path | str) -> os.stat_result | None:
-    """
+    '''
     Safely retrieve file statistics.
 
     Args:
@@ -140,7 +119,7 @@ def _get_file_stats(file_path: Path | str) -> os.stat_result | None:
 
     Returns:
         File statistics if successful, None if file doesn't exist or on error
-    """
+    '''
     try:
         return file_path.stat() if isinstance(file_path, Path) else os.stat(str(file_path))
     except FileNotFoundError:
@@ -157,7 +136,7 @@ def _has_valid_extension(
     file_path: Path,
     valid_extensions: Sequence[str]
 ) -> bool:
-    """
+    '''
     Check if file has a valid extension (case-insensitive).
 
     Args:
@@ -166,7 +145,7 @@ def _has_valid_extension(
 
     Returns:
         True if file has valid extension or no extensions specified
-    """
+    '''
     if not valid_extensions:
         return True
 
@@ -174,7 +153,7 @@ def _has_valid_extension(
     return any(ext.lower() == file_suffix for ext in valid_extensions)
 
 def _resolve_actual_case(file_path: Path) -> Path:
-    """
+    '''
     Resolve actual filename case on case-insensitive filesystems.
 
     On Windows, returns the path with the actual case found in the directory.
@@ -186,7 +165,7 @@ def _resolve_actual_case(file_path: Path) -> Path:
 
     Returns:
         Path with correct case, or original path if resolution fails
-    """
+    '''
     try:
         parent = file_path.parent
         target_name = file_path.name.upper()
@@ -250,44 +229,40 @@ def try_get_executable(
     ----------
     file_path : StringOrPathlib
         _the base file path_
-    extensions : Sequence[str] | None, optional
-        _the extensions_, by default None
+    extensions : Sequence[str]
+        _the extensions_
 
     Returns
     -------
     str
         _the path of the executable_
     '''
-    base_path = Path(file_path).resolve() if isinstance(file_path, str) else file_path
-    if stats := _get_file_stats(file_path):
-        if is_executable(
-            Path(file_path),
-            stats,
-            extensions
-        ):
-            return str(file_path)
+    base_path = Path(file_path).resolve() if isinstance(file_path, str) else file_path.resolve()
 
-    is_win32 = IS_WINDOWS
+    if stats := _get_file_stats(base_path):
+        if is_executable(base_path, stats, extensions):
+            return str(base_path)
+
     for ext in extensions:
-        candiate = base_path.with_name(base_path.name + ext)
-        if not (stats := _get_file_stats(candiate)):
+        candidate = base_path.with_name(base_path.name + ext)
+        if not (stats := _get_file_stats(candidate)):
             continue
 
         if not stat.S_ISREG(stats.st_mode):
             continue
 
-        if is_win32:
-            candiate = _resolve_actual_case(candiate)
-            return str(candiate)
+        if IS_WINDOWS:
+            candidate = _resolve_actual_case(candidate)
+            return str(candidate)
 
         if is_unix_executable(stats):
-            return str(candiate)
+            return str(candidate)
 
     return ''
 
 
 def get_pathext_extensions() -> list[str]:
-    """Get executable extensions from PATHEXT environment variable."""
+    '''Get executable extensions from PATHEXT environment variable.'''
     pathext = os.environ.get('PATHEXT', '')
     if not pathext:
         return []
@@ -296,7 +271,7 @@ def get_pathext_extensions() -> list[str]:
 
 
 def iter_path_dirs() -> Generator[str, None, None]:
-    """Get directories from PATH environment variable."""
+    '''Get directories from PATH environment variable.'''
     path_env = os.environ.get('PATH', '')
     if not path_env:
         return
@@ -305,46 +280,5 @@ def iter_path_dirs() -> Generator[str, None, None]:
         if directory.strip():
             yield directory.strip()
 
-
-def find_in_path(tool: str) -> list[str]:
-    '''
-    Find all occurrences of tool in PATH.
-
-    Parameters
-    ----------
-    tool : str
-        _the tool name_
-
-    Returns
-    -------
-    list[str]
-        _the occurences_
-
-    Raises
-    ------
-    IOError
-        _if tool is null / empty string_
-    '''
-    if not tool:
-        raise IOError("Tool parameter is required")
-
-    extensions = get_pathext_extensions() if IS_WINDOWS else []
-
-    if is_rooted(tool):
-        executable_path = try_get_executable(tool, extensions=extensions)
-        return [executable_path] if executable_path else []
-
-    if os.sep in tool or (IS_WINDOWS and '/' in tool):
-        return []
-
-    matches = []
-
-    for directory in iter_path_dirs():
-        candidate = Path(directory) / tool
-        executable_path = try_get_executable(candidate, extensions=extensions)
-        if executable_path:
-            matches.append(executable_path)
-
-    return matches
 
 
