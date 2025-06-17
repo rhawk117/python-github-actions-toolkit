@@ -24,11 +24,7 @@ def asyncify(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        event_loop = asyncio.get_event_loop()
-        return await event_loop.run_in_executor(
-            None,
-            lambda: func(*args, **kwargs)
-        )
+        return await asyncio.to_thread(func, *args, **kwargs)
 
     wrapper.__signature__ = inspect.signature(func)  # type: ignore
     wrapper.__annotations__ = get_type_hints(func).copy()
@@ -37,3 +33,4 @@ def asyncify(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
         wrapper.__annotations__['return'] = f'Awaitable[{return_type}]'
 
     return wrapper
+
