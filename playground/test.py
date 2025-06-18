@@ -59,10 +59,10 @@ core.group(name=f'ENV Prefix: {prefix}')
 for prefix in prefixes:
 
     for k, v in filter(lambda item: item[0].startswith(prefix), os.environ.items()):
-        core.notice(f"{k}={v}")
+        print(f'{k}={v}')
 core.end_group()
 
-core.notice(f'prefixes: {','.join(prefixes)}')
+core.notice(f'runner env prefixes: {','.join(prefixes)}')
 
 
 
