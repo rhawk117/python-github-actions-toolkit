@@ -20,13 +20,14 @@ repository = "https://github.com/rhawk117/python-github-actions-toolkit"
 dev = [
     "coverage>=7.9.1",
     "pytest>=8.4.0",
+    "pytest-asyncio>=0.24.0",
     "pytest-cov>=6.2.1",
-    "ruff>=0.11.13",
+    "ruff>=0.11.13"
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "actions_toolkit"
+    "action_toolkit"
 ]
 
 [tool.pytest.ini_options]
@@ -35,6 +36,7 @@ pythonpath = "."
 python_files = [
     "test_*.py"
 ]
+asyncio_mode = "auto"
 python_functions = [
     "test_*"
 ]

@@ -3,7 +3,6 @@ import dataclasses
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from action_toolkit.core.command import StringOrPathlib
 
 if TYPE_CHECKING:
     from action_toolkit.corelib.types.io import StringOrPathlib
