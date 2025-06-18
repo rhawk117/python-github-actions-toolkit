@@ -1,7 +1,6 @@
-# action_toolkit/io_main.py
+# action_toolkit/io.py
 from __future__ import annotations
 import os
-import re
 import shutil
 import stat as _stat
 from pathlib import Path
@@ -340,30 +339,26 @@ def unique_path(path: StringOrPathlib, *, sep: str = '_', limit: int = 100) -> P
 
     return result
 
-def chmod_perm(path: StringOrPathlib, mode: int | str) -> None:
-    """
-    Accept int, 9-char 'rwxr-x---', or octal string like '600'.
-    """
+def chmod_perm(path: StringOrPathlib, mode: str | int) -> None:
     p = Path(path)
     if isinstance(mode, int):
-        oct_mode = mode
-    elif isinstance(mode, str) and mode.isdigit():
-        oct_mode = int(mode, 8)
-    else:
-        m = mode
-        if len(m) != 9 or any(c not in "rwx-" for c in m):
-            raise ValueError(f"Invalid symbolic mode: {mode}")
-        def trip(t: str) -> int:
-            v = 0
-            if t[0]=='r': v |= 4
-            if t[1]=='w': v |= 2
-            if t[2]=='x': v |= 1
-            return v
-        owner = trip(m[0:3])
-        group = trip(m[3:6])
-        other = trip(m[6:9])
-        oct_mode = (owner<<6)|(group<<3)|other
+        p.chmod(mode)
+        return
 
+    if len(mode) != 9 or any(c not in 'rwx-' for c in mode):
+        raise ValueError(f'Invalid symbolic mode: {mode}')
+
+    def _triplet(trip: str) -> int:
+        v = 0
+        if trip[0] == 'r': v |= 4
+        if trip[1] == 'w': v |= 2
+        if trip[2] == 'x': v |= 1
+        return v
+
+    owner = _triplet(mode[0:3])
+    group = _triplet(mode[3:6])
+    other = _triplet(mode[6:9])
+    oct_mode = (owner << 6) | (group << 3) | other
     p.chmod(oct_mode)
 
 
@@ -381,15 +376,21 @@ def get_pathext_extensions() -> list[str]:
 
     return [ext for ext in pathext.split(os.pathsep) if ext]
 
-def iter_env_path() -> Iterator[Path]:
-    """
-    Split PATH on os.pathsep **and** ';', strip whitespace, skip empty.
-    """
-    raw = os.environ.get("PATH", "")
-    for seg in re.split(rf"[{re.escape(os.pathsep)};]", raw):
-        s = seg.strip()
-        if s:
-            yield Path(s)
+def iter_env_path() -> Generator[Path, None, None]:
+    '''Iterate over directories in the PATH environment variable.
+
+    Yields
+    ------
+    Generator[str, None, None]
+        _the path environment variables_
+    '''
+    path_env = os.environ.get('PATH', '')
+    if not path_env:
+        return
+
+    for directory in path_env.split(os.pathsep):
+        yield Path(directory)
+
 
 def is_unix_executable(stats: os.stat_result) -> bool:
     '''Check if file has executable permissions on Unix systems.'''

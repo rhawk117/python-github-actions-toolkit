@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 
 import pytest
-from action_toolkit.corelib.common.dataclass_utils import (
+from action_toolkit.corelib.utils.dataclass_utils import (
     dump_dataclass,
     iter_dataclass_dict,
     json_dumps_dataclass,

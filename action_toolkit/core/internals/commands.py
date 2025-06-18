@@ -12,7 +12,7 @@ import sys
 import json
 from typing import TYPE_CHECKING, Any, Literal, TextIO, Final
 
-from action_toolkit.corelib.common import dataclass_utils
+from action_toolkit.corelib.utils import dataclass_utils
 from .interfaces import AnnotationProperties, WorkflowCommand
 
 
@@ -73,11 +73,7 @@ def to_command_value(*, input: CommandValue) -> str:
         return input
 
     try:
-        return json.dumps(
-            input,
-            separators=(',', ':'),
-            ensure_ascii=False
-        )
+        return json.dumps(input, separators=(',', ':'), ensure_ascii=False)
     except (TypeError, ValueError):
         return str(input)
 
