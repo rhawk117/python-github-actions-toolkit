@@ -53,13 +53,13 @@ jobs:
               fi
               echo "::endgroup::"
               echo "::notice::Script file exists"
-            working-directory: src
 
           - name: Install action_toolkit
             run: |
               set -euo pipefail
               echo "::group::Installing action_toolkit"
               uv pip install -e .
+              uv pip list
               echo "::endgroup::"
               echo "::notice::action_toolkit installed"
 
@@ -72,4 +72,3 @@ jobs:
               else
                   python playground/${{ github.event.inputs.script_name }}
               fi
-            working-directory: src
