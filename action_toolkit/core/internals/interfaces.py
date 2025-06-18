@@ -86,33 +86,33 @@ class AnnotationProperties:
         A title for the annotation.
     file : Optional[str]
         The name of the file for which the annotation should be created.
-    startLine : Optional[int]
+    start_line : Optional[int]
         The start line for the annotation.
-    endLine : Optional[int]
-        The end line for the annotation. Defaults to startLine when
-        startLine is provided.
-    startColumn : Optional[int]
+    end_line : Optional[int]
+        The end line for the annotation. Defaults to start_line when
+        start_line is provided.
+    start_col : Optional[int]
         The start column for the annotation. Cannot be sent when
-        startLine and endLine are different values.
-    endColumn : Optional[int]
+        start_line and end_line are different values.
+    end_col : Optional[int]
         The end column for the annotation. Cannot be sent when
-        startLine and endLine are different values. Defaults to
-        startColumn when startColumn is provided.
+        start_line and end_line are different values. Defaults to
+        start_col when start_col is provided.
     '''
     title: str | None = None
     file: str | None = None
-    startLine: int | None = None
-    endLine: int | None = None
-    startColumn: int | None = None
-    endColumn: int | None = None
+    start_line: int | None = None # startLine
+    end_line: int | None = None # endLine
+    start_col: int | None = None # startColumn
+    end_col: int | None = None # endColumn
 
     def __post_init__(self) -> None:
         '''Validate annotation properties constraints.'''
-        if self.startColumn is not None or self.endColumn is not None:
-            if self.startLine != self.endLine and self.endLine is not None:
+        if self.start_col is not None or self.end_col is not None:
+            if self.start_line != self.end_line and self.end_line is not None:
                 raise AnnotationError(
-                    'startColumn and endColumn cannot be sent when '
-                    'startLine and endLine are different values'
+                    'start_col and end_col cannot be sent when '
+                    'start_line and end_line are different values'
                 )
 
 class WorkflowEnv(StrEnum):
