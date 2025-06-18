@@ -1,5 +1,6 @@
 '''Tests for core.path_utils module'''
 
+from email.mime import base
 import os
 import sys
 import tempfile
@@ -247,7 +248,9 @@ class TestGetRelativePath:
 
     def test_basic_relative_path(self):
         '''Test basic relative path calculation'''
-        assert get_relative_path('C:\\Users\\test\\file.txt', 'C:\\Users') == os.path.join('test', 'file.txt')
+        abs_path = os.path.join('Users', 'test', 'file.txt')
+        base_path = os.path.join('Users', 'test')
+        assert get_relative_path(abs_path, base_path) == os.path.join('test', 'file.txt')
 
     def test_same_path(self):
         '''Test relative path when paths are the same'''
