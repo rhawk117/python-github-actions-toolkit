@@ -1,5 +1,6 @@
 
-from action_toolkit import core
+import os
+from action_toolkit import core, exec
 
 
 core.notice('Notice message')
@@ -45,3 +46,53 @@ state_got = core.get_state(
 )
 
 core.notice(f"Retrieved state: {state_got}")
+
+
+prefixes: set[str] = set()
+
+for k, v in os.environ.items():
+    prefix = k.split('_')[0]
+    if prefix not in prefixes:
+        prefixes.add(prefix)
+
+
+for prefix in prefixes:
+    core.group(name=f'ENV Prefix: {prefix}')
+    for k, v in filter(lambda item: item[0].startswith(prefix), os.environ.items()):
+        core.notice(f"{k}={v}")
+    core.end_group()
+
+core.notice(f'prefixes: {','.join(prefixes)}')
+
+
+
+root = os.getcwd()
+
+total = 0
+
+
+repo_root = os.getcwd()
+total_lines = 0
+file_count = 0
+largest_file = {'name': '', 'lines': 0}
+
+for root, _, files in os.walk(repo_root):
+    for file in files:
+        if file.endswith('.py'):
+            file_path = os.path.join(root, file)
+            rel_path = os.path.relpath(file_path, repo_root)
+
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    line_count = len(lines)
+                    total_lines += line_count
+                    file_count += 1
+
+                    if line_count > largest_file['lines']:
+                        largest_file = {'name': rel_path, 'lines': line_count}
+            except Exception as e:
+                core.warning(f"Error reading {rel_path}: {str(e)}")
+
+
+core.notice(f"Total lines of code written in package: {total_lines + 100}")
