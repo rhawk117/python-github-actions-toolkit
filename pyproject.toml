@@ -27,7 +27,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "action_toolkit"
+    "src/action_toolkit"
 ]
 
 [tool.pytest.ini_options]
