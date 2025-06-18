@@ -48,11 +48,12 @@ jobs:
               set -euo pipefail
               echo "::group::Checking for script file"
               if [ ! -f "playground/${{ github.event.inputs.script_name }}" ]; then
-                  echo "::error::Script file not found in playground/input"
+                  echo "::error::Script file not found in src/playground/input"
                   exit 1
               fi
               echo "::endgroup::"
               echo "::notice::Script file exists"
+            working-directory: src
 
           - name: Install action_toolkit
             run: |
@@ -71,3 +72,4 @@ jobs:
               else
                   python playground/${{ github.event.inputs.script_name }}
               fi
+            working-directory: src
