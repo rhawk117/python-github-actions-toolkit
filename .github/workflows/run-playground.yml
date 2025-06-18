@@ -1,0 +1,73 @@
+name: Run Playground Script
+on:
+  workflow_dispatch:
+    inputs:
+      script_name:
+        description: Name of script to run in playground
+        required: true
+        default: 'playground.py'
+
+      is_async:
+        description: Whether the script is async
+        required: true
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  run-playground:
+      runs-on: ubuntu-latest
+      steps:
+          - name: Display Inputs
+            run: |
+              set -euo pipefail
+              echo "Script: playground/${{ github.event.inputs.script_name }}"
+              echo "Is Async: ${{ github.event.inputs.is_async }}"
+
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Setup UV & Python
+            uses: ./.github/actions/python-init
+
+          - name: Install Dev Dependencies
+            run: |
+              set -euo pipefail
+              echo "::group::Installing development dependencies"
+              uv sync --dev
+              echo "::endgroup::"
+              echo "::notice::Development dependencies installed"
+
+          - name: Verify python file exists
+            run: |
+              set -euo pipefail
+              echo "::group::Checking for script file"
+              if [ ! -f "playground/${{ github.event.inputs.script_name }}" ]; then
+                  echo "::error::Script file not found in playground/input"
+                  exit 1
+              fi
+              echo "::endgroup::"
+              echo "::notice::Script file exists"
+
+          - name: Install action_toolkit
+            run: |
+              set -euo pipefail
+              echo "::group::Installing action_toolkit"
+              uv pip install -e .
+              echo "::endgroup::"
+              echo "::notice::action_toolkit installed"
+
+          - name: Run Playground Script
+            run: |
+              set -euo pipefail
+              echo "::group::Running script"
+              if [ "${{ github.event.inputs.is_async }}" = "yes" ]; then
+                  python -m asyncio playground/${{ github.event.inputs.script_name }}
+              else
+                  python playground/${{ github.event.inputs.script_name }}
+              fi
