@@ -1,0 +1,42 @@
+on:
+    push:
+        paths-ignore:
+            - "**.md"
+            - "**.txt"
+            - "**.json"
+
+    workflow_dispatch:
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    code-quality:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup UV & Python
+              uses: ./.github/actions/python-init
+
+            - name: Install Dev Dependencies
+              run: |
+                  echo "::group::Installing development dependencies"
+                  uv sync --dev
+                  echo "::endgroup::"
+                  echo "::notice::Development dependencies installed"
+
+            - name: Ruff Format and Linit
+              run: |
+                  echo "::debug::Running code quality checks"
+                  chmod +x ./scripts/ruff.sh
+                  ./scripts/ruff.sh
+                  echo "::notice::Formating and linting complete"
+
+            - name: Run Tests
+              run: |
+                echo "::debug::Running tests"
+                chmod +x ./scripts/test.sh
+                ./scripts/test.sh

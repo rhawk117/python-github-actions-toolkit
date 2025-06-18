@@ -1,10 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
 [project]
-name = "python-github-actions-toolkit"
+name = "action_toolkit"
+authors = [
+    { name = "rhawk117" }
+]
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "pydantic>=2.11.5",
-    "pydantic-settings>=2.9.1",
+
+[project.urls]
+repository = "https://github.com/rhawk117/python-github-actions-toolkit"
+
+[dependency-groups]
+dev = [
+    "coverage>=7.9.1",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.11.13"
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/action_toolkit"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = "."
+python_files = [
+    "test_*.py"
+]
+asyncio_mode = "auto"
+python_functions = [
+    "test_*"
+]
+
+log_cli=true
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+filter_warnings = [
+    "error",
+    "ignore::PendingDeprecationWarning",
+    "ignore::ResourceWarning"
+]
+
+
+

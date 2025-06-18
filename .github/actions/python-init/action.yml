@@ -1,0 +1,43 @@
+name: Initialize Python & UV
+description: |
+  Checks out repository and sets up Python environment with UV
+  and caches dependencies, not you must checkout first
+
+inputs:
+  uv-version:
+    description: Version of UV to use, not required
+    required: false
+    default: '0.7.12'
+
+  enable-cache:
+    description: Enable caching of dependencies, defaults to true
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Display .python-version and Action Inputs
+      id: get-py-version
+      shell: bash
+      run: |
+        PYTHON_VERSION=$( < .python-version )
+        echo "::group:: Display Python Version and Action Inputs"
+        echo "::info:: Python Version: $PYTHON_VERSION"
+        echo "::info:: UV Version: ${{ inputs.uv-version }}"
+        echo "::endgroup::"
+
+        echo "python_version=${PYTHON_VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Install UV
+      id: uv-install
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: ${{ inputs.uv-version }}
+        enable-cache: ${{ inputs.enable-cache }}
+        cache-dependency-glob: 'uv.lock'
+
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ steps.get-py-version.outputs.python_version }}
