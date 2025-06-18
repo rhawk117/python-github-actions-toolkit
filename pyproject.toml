@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 
 [project]
-name = "action_toolkit"
+name = "action-toolkit"
 authors = [
     { name = "rhawk117" }
 ]
@@ -27,7 +27,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "src/action_toolkit"
+    "action_toolkit"
 ]
 
 [tool.pytest.ini_options]
