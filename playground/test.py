@@ -55,7 +55,7 @@ for k, v in os.environ.items():
     if prefix not in prefixes:
         prefixes.add(prefix)
 
-core.group(name=f'ENV Prefix: {prefix}')
+core.group(name=f'ENV Prefix {prefix}')
 for prefix in prefixes:
 
     for k, v in filter(lambda item: item[0].startswith(prefix), os.environ.items()):
