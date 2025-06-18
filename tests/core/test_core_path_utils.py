@@ -250,7 +250,7 @@ class TestGetRelativePath:
         '''Test basic relative path calculation'''
         abs_path = os.path.join('Users', 'test', 'file.txt')
         base_path = os.path.join('Users', 'test')
-        assert get_relative_path(abs_path, base_path) == os.path.join('test', 'file.txt')
+        assert get_relative_path(abs_path, base_path) == 'file.txt'
 
     def test_same_path(self):
         '''Test relative path when paths are the same'''
