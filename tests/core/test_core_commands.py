@@ -231,20 +231,6 @@ class TestAddPath:
             os.unlink(temp_path)
             os.environ['PATH'] = original_path
 
-    @patch('sys.stdout', new_callable=io.StringIO)
-    def test_add_path_fallback_command(self, mock_stdout):
-        '''Test adding path using command-based fallback'''
-        original_path = os.environ.get('PATH', '')
-
-        try:
-            with patch.dict(os.environ, {'PATH': original_path}):
-                add_path(path='/custom/bin')
-
-                assert os.environ['PATH'].startswith('/custom/bin')
-                output = mock_stdout.getvalue()
-                assert '::add-path::/custom/bin' in output
-        finally:
-            os.environ['PATH'] = original_path
 
     def test_add_path_with_path_object(self):
         '''Test adding Path object'''

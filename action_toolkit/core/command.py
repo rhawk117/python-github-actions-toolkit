@@ -264,10 +264,9 @@ def add_path(*, path: StringOrPathlib) -> None:
         with open(path_file, "a", encoding="utf-8") as f:
             f.write(path_str + os.linesep)
     else:
-        commands.issue_command(
-            command=WorkflowCommand.ADD_PATH,
-            properties={},
-            message=path_str
+        raise RuntimeError(
+            "The ::add-path:: command requires the GITHUB_PATH environment variable and"
+            " is deprecated and disabled. The GITHUB_PATH environment variable is not set or does not exist."
         )
 
 
