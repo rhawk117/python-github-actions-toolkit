@@ -67,8 +67,9 @@ jobs:
             run: |
               set -euo pipefail
               echo "::group::Running script"
+              source .venv/bin/activate
               if [ "${{ github.event.inputs.is_async }}" = "yes" ]; then
-                  python -m asyncio playground/${{ github.event.inputs.script_name }}
+                python -m asyncio playground/${{ github.event.inputs.script_name }}
               else
-                  python playground/${{ github.event.inputs.script_name }}
+                python playground/${{ github.event.inputs.script_name }}
               fi
