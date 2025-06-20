@@ -1,9 +1,3 @@
+from . import core, exec
 
-from . import core
-
-from . import exec
-
-__all__ = [
-    'core',
-    'exec'
-]
+__all__ = ['core', 'exec']

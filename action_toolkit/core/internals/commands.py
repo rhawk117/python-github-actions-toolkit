@@ -1,23 +1,24 @@
-'''
+"""
 **core.internals.commands**
 
 Abstracts the command handling functionality for GitHub Actions.
 
-'''
+"""
+
 from __future__ import annotations
 
-
+import json
 import os
 import sys
-import json
-from typing import TYPE_CHECKING, Any, Literal, TextIO, Final
+
+from typing import TYPE_CHECKING, Any, Final, Literal, TextIO
 
 from action_toolkit.corelib.utils import dataclass_utils
+
 from .interfaces import AnnotationProperties, WorkflowCommand
 
-
 if TYPE_CHECKING:
-    from action_toolkit.corelib.types.core import CommandValue, CommandPropertyValue
+    from action_toolkit.corelib.types.core import CommandPropertyValue, CommandValue
 
 CMD_STRING: Final[str] = '::'
 
@@ -28,151 +29,15 @@ __all__ = [
     'issue_command',
     'issue',
     'issue_file_command',
-    'prepare_key_value_message'
+    'prepare_key_value_message',
 ]
 
-def to_command_value(*, input: CommandValue) -> str:
-    '''
-    Sanitizes an input into a string for safe command passing.
-
-    mirrors toCommandValue in ts, converting
-    various input types to strings suitable for GitHub Actions commands.
-
-    Parameters
-    ----------
-    input : CommandValue
-        The input value to sanitize. Can be None, string, or any
-        JSON-serializable value.
-
-    Returns
-    -------
-    str
-        Sanitized string representation of the input:
-        - None -> ''
-        - str -> unchanged
-        - Other types -> JSON serialized
-
-    Examples
-    --------
-    >>> to_command_value(input=None)
-    ''
-
-    >>> to_command_value(input='hello world')
-    'hello world'
-
-    >>> to_command_value(input={'key': 'value'})
-    '{"key": "value"}'
-
-    >>> to_command_value(input=[1, 2, 3])
-    '[1, 2, 3]'
-    '''
-    if input is None:
-        return ''
-
-    if isinstance(input, str):
-        return input
-
-    try:
-        return json.dumps(input, separators=(',', ':'), ensure_ascii=False)
-    except (TypeError, ValueError):
-        return str(input)
 
 
-def to_command_properties(annotation_properties: AnnotationProperties) -> dict[str, CommandPropertyValue]:
-    # 'startLine', # should be mapped to 'line'
-    # 'startColumn', # should be mapped to 'col'
-    cmd_props = dataclass_utils.dump_dataclass(
-        annotation_properties,
-        exclude_none=True,
-        exclude={'startLine', 'startColumn'}
-    )
-
-    if annotation_properties.startLine is not None:
-        cmd_props['line'] = annotation_properties.startLine
-
-    if annotation_properties.startColumn is not None:
-        cmd_props['col'] = annotation_properties.startColumn
-
-    return cmd_props
-
-def escape_data(s: Any) -> str:
-    '''
-    Escape special characters in command data.
-
-    This function mirrors escapeData in command.ts, ensuring that
-    command messages are properly escaped for the GitHub Actions runner.
-
-    Parameters
-    ----------
-    s : Any
-        Data to escape. Will be converted to string first.
-
-    Returns
-    -------
-    str
-        The escaped string with special characters replaced:
-        - % -> %25
-        - \\r -> %0D
-        - \\n -> %0A
-
-    Examples
-    --------
-    >>> escape_data('Hello\\nWorld')
-    'Hello%0AWorld'
-
-    >>> escape_data('100% complete')
-    '100%25 complete'
-    '''
-    return (
-        to_command_value(input=s)
-            .replace('%', '%25')
-            .replace('\r', '%0D')
-            .replace('\n', '%0A')
-    )
-
-
-def escape_property(s: Any) -> str:
-    '''
-    Escape special characters in command properties.
-
-    This function mirrors escapeProperty in command.ts, providing
-    additional escaping for property values.
-
-    Parameters
-    ----------
-    s : Any
-        Property value to escape. Will be converted to string first.
-
-    Returns
-    -------
-    str
-        The escaped string with special characters replaced:
-        - % -> %25
-        - \\r -> %0D
-        - \\n -> %0A
-        - : -> %3A
-        - , -> %2C
-
-    Examples
-    --------
-    >>> escape_property('key:value')
-    'key%3Avalue'
-
-    >>> escape_property('item1,item2')
-    'item1%2Citem2'
-    '''
-    return (
-        to_command_value(input=s)
-            .replace('%', '%25')
-            .replace('\r', '%0D')
-            .replace('\n', '%0A')
-            .replace(':', '%3A')
-            .replace(',', '%2C')
-    )
 
 
 class Command:
-    '''
+    """
     Represents an Actions workflow command.
 
     This class mirrors the Command class in command.ts, providing
@@ -194,30 +59,21 @@ class Command:
     >>> str(cmd)
     '::warning::This is a warning'
 
-    >>> cmd = Command(
-    ...     command='set-output',
-    ...     properties={'name': 'result'},
-    ...     message='success'
-    ... )
+    >>> cmd = Command(command='set-output', properties={'name': 'result'}, message='success')
     >>> str(cmd)
     '::set-output name=result::success'
-    '''
+    """
 
     def __init__(
-        self,
-        *,
-        command: WorkflowCommand,
-        properties: dict[str, CommandPropertyValue],
-        message: CommandValue
+        self, *, command: WorkflowCommand, properties: dict[str, CommandPropertyValue], message: CommandValue
     ) -> None:
-        '''Initialize a Command instance.'''
+        """Initialize a Command instance."""
         self.command = command.value if isinstance(command, WorkflowCommand) else command
         self.properties = properties
         self.message = message
 
-
     def as_string(self) -> str:
-        '''
+        """
         Convert the command to its string representation.
 
         Returns
@@ -225,7 +81,7 @@ class Command:
         str
             The formatted command string in the format:
             ::command key=value,key=value::message
-        '''
+        """
         cmd_str = f'{CMD_STRING}{self.command}'
 
         if self.properties:
@@ -240,9 +96,8 @@ class Command:
         cmd_str += f'{CMD_STRING}{escape_data(self.message)}'
         return cmd_str
 
-
     def write(self, file: TextIO | None = None) -> None:
-        '''
+        """
         Write a command to the output stream.
 
         Parameters
@@ -251,32 +106,25 @@ class Command:
             The command to write.
         file : Optional[TextIO]
             The output stream to write to. Defaults to sys.stdout.
-        '''
+        """
         if file is None:
             file = sys.stdout
 
-        file.write(self.as_string() + os.linesep) # type: ignore
-        file.flush() # type: ignore
-
+        file.write(self.as_string() + os.linesep)  # type: ignore
+        file.flush()  # type: ignore
 
     def __repr__(self) -> str:
-        '''Return a detailed string representation for debugging.'''
-        return (
-            f'Command(command={self.command!r}, '
-            f'properties={self.properties!r}, '
-            f'message={self.message!r})'
-        )
+        """Return a detailed string representation for debugging."""
+        return f'Command(command={self.command!r}, properties={self.properties!r}, message={self.message!r})'
 
 
 # ** public API functions **
 
+
 def issue_command(
-    *,
-    command: WorkflowCommand,
-    properties: dict[str, CommandPropertyValue] | None = None,
-    message: CommandValue = ''
+    *, command: WorkflowCommand, properties: dict[str, CommandPropertyValue] | None = None, message: CommandValue = ''
 ) -> None:
-    '''
+    """
     Issues a command to the Actions runner.
 
     This function mirrors issueCommand function in command.ts.
@@ -309,30 +157,22 @@ def issue_command(
     # Output: ::warning::This is a warning message
 
     >>> # Set an environment variable
-    >>> issue_command(
-    ...     command='set-env',
-    ...     properties={'name': 'MY_VAR'},
-    ...     message='some value'
-    ... )
+    >>> issue_command(command='set-env', properties={'name': 'MY_VAR'}, message='some value')
     # Output: ::set-env name=MY_VAR::some value
 
     >>> # Add a secret mask
     >>> issue_command(command='add-mask', message='secretValue123')
     # Output: ::add-mask::secretValue123
-    '''
+    """
     if properties is None:
         properties = {}
 
-    cmd = Command(
-        command=command,
-        properties=properties,
-        message=message
-    )
+    cmd = Command(command=command, properties=properties, message=message)
     cmd.write()
 
 
 def issue(*, name: WorkflowCommand, message: str = '') -> None:
-    '''
+    """
     Issue a simple command without properties.
 
     This is a convenience function that mirrors the issue function
@@ -352,7 +192,7 @@ def issue(*, name: WorkflowCommand, message: str = '') -> None:
 
     >>> issue(name='endgroup')
     # Output: ::endgroup::
-    '''
+    """
     issue_command(command=name, properties={}, message=message)
 
 
@@ -361,9 +201,9 @@ def issue_file_command(
     message: str,
     *,
     env_var: str | None = None,
-    file_path: str | None = None
+    file_path: str | None = None,
 ) -> str:
-    '''
+    """
     Issue a command by writing to a file.
 
     This is used for newer style GitHub Actions commands that write
@@ -385,7 +225,7 @@ def issue_file_command(
     ValueError
         If neither env_var nor file_path is provided, or if the
         file path cannot be determined.
-    '''
+    """
     if file_path is None:
         if env_var is None:
             raise ValueError('Either env_var or file_path must be provided')
@@ -403,8 +243,10 @@ def issue_file_command(
 
 
 def prepare_key_value_message(key: str, value: Any) -> str:
-    '''
-    Prepare a key-value message for file commands.
+    """
+    Prepares a key-value message for file commands by converting them
+    to a string format suitable for GitHub Actions, follows identical
+    pattern to the javascript implementation.
 
     This formats messages for the newer file-based command style
     used with GITHUB_OUTPUT and GITHUB_ENV.
@@ -420,7 +262,7 @@ def prepare_key_value_message(key: str, value: Any) -> str:
     -------
     str
         The formatted message with proper delimiters and escaping.
-    '''
+    """
     converted_value = to_command_value(input=value)
 
     delimiter = f'ghadelimiter_{os.urandom(16).hex()}'

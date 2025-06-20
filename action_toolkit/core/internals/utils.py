@@ -1,17 +1,18 @@
-'''
+"""
 **core.internals.utils**
 Utilities for GitHub Actions command handling, equivalent to utils.ts in TypeScript.
 
 This module provides utility functions for converting values and properties
 from strings to command values, handling annotations, and parsing inputs.
-'''
-from __future__ import annotations
-from action_toolkit.corelib.types.core import YAML_BOOLEAN_FALSE, YAML_BOOLEAN_TRUE
+"""
 
+from __future__ import annotations
+
+from action_toolkit.corelib.types.core import YAML_BOOLEAN_TRUE
 
 
 def parse_yaml_boolean(value: str) -> bool:
-    '''
+    """
     Parse a boolean value according to YAML 1.2 specification.
 
     This utility function is used internally by getBooleanInput
@@ -56,12 +57,12 @@ def parse_yaml_boolean(value: str) -> bool:
 
     >>> parse_boolean('anything else')
     False
-    '''
+    """
     return value.lower() in YAML_BOOLEAN_TRUE
 
 
 def get_input_name(name: str) -> str:
-    '''
+    """
     Converts an input name to its environment variable form.
 
     GitHub Actions converts input names to uppercase environment
@@ -85,13 +86,13 @@ def get_input_name(name: str) -> str:
 
     >>> get_input_name('my input name')
     'INPUT_MY_INPUT_NAME'
-    '''
+    """
     normalized = name.upper().replace(' ', '_').replace('-', '_')
     return f'INPUT_{normalized}'
 
 
 def split_lines(input: str, *, skip_empty: bool = True) -> list[str]:
-    '''
+    """
     Split a multiline string into individual lines.
 
     This utility is used by getMultilineInput to process
@@ -116,7 +117,7 @@ def split_lines(input: str, *, skip_empty: bool = True) -> list[str]:
 
     >>> split_lines('line1\\nline2\\n\\nline3', skip_empty=False)
     ['line1', 'line2', '', 'line3']
-    '''
+    """
     lines = input.split('\n')
 
     if skip_empty:
@@ -126,7 +127,7 @@ def split_lines(input: str, *, skip_empty: bool = True) -> list[str]:
 
 
 def is_valid_url(url: str) -> bool:
-    '''
+    """
     Check if a string is a valid URL.
 
     Used internally for validation of certain inputs.
@@ -140,9 +141,10 @@ def is_valid_url(url: str) -> bool:
     -------
     bool
         True if the string is a valid URL, False otherwise.
-    '''
+    """
     try:
         from urllib.parse import urlparse
+
         result = urlparse(url)
         return all([result.scheme, result.netloc])
     except Exception:

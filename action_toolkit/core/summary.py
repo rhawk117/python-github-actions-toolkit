@@ -1,59 +1,59 @@
-'''
+"""
 **core.summary**
 GitHub Actions job summary functionality.
 
 This module provides the Summary class for creating markdown summaries
 that appear in the GitHub Actions workflow summary page. Mirrors the
 summary functionality in @actions/core.
-'''
+"""
 
 from __future__ import annotations
-import os
-from pathlib import Path
 
-from io import StringIO
+import os
+
 from abc import ABC, abstractmethod
+from io import StringIO
+from pathlib import Path
 from typing import Self
 
-from action_toolkit.core.internals.exceptions import CoreActionError
-
+from action_toolkit.core.commands.exceptions import CoreActionError
 
 
 class SummaryWriter(ABC):
-    '''Abstract base class for summary writers.'''
+    """Abstract base class for summary writers."""
 
     @abstractmethod
     def write(self, content: str) -> None:
-        '''Write content to the summary.'''
+        """Write content to the summary."""
         pass
 
     @abstractmethod
     def clear(self) -> None:
-        '''Clear the summary content.'''
+        """Clear the summary content."""
         pass
 
 
 class FileSummaryWriter(SummaryWriter):
-    '''File-based summary writer.'''
+    """File-based summary writer."""
 
     def __init__(self, file_path: str) -> None:
-        '''Initialize with the summary file path.'''
+        """Initialize with the summary file path."""
         self.file_path = Path(file_path)
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
 
     def write(self, content: str) -> None:
-        '''Append content to the summary file.'''
+        """Append content to the summary file."""
         with open(self.file_path, 'a', encoding='utf-8') as f:
             f.write(content)
 
     def clear(self) -> None:
-        '''Clear the summary file.'''
+        """Clear the summary file."""
         if self.file_path.exists():
             self.file_path.unlink()
 
 
 class Summary:
-    '''
+    """
     GitHub Actions job summary builder.
 
     This class mirrors the Summary class in @actions/core, providing
@@ -72,19 +72,16 @@ class Summary:
     Examples
     --------
     >>> summary = Summary()
-    >>> (summary
-    ...     .add_heading('Test Results')
+    >>> (
+    ...     summary.add_heading('Test Results')
     ...     .add_paragraph('All tests passed!')
-    ...     .add_table([
-    ...         ['Test', 'Status', 'Time'],
-    ...         ['test_foo', 'Passed', '1.2s'],
-    ...         ['test_bar', 'Passed', '0.8s']
-    ...     ])
-    ...     .write())
-    '''
+    ...     .add_table([['Test', 'Status', 'Time'], ['test_foo', 'Passed', '1.2s'], ['test_bar', 'Passed', '0.8s']])
+    ...     .write()
+    ... )
+    """
 
     def __init__(self, writer: SummaryWriter | None = None) -> None:
-        '''
+        """
         Initialize a new Summary instance.
 
         Parameters
@@ -92,25 +89,25 @@ class Summary:
         writer : Optional[SummaryWriter]
             Custom writer for testing. Defaults to file writer using
             GITHUB_STEP_SUMMARY environment variable.
-        '''
+        """
         if writer is None:
             summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
             if not summary_path:
                 raise CoreActionError(
-                    'GITHUB_STEP_SUMMARY environment variable is not set. '
-                    'This API is only available in GitHub Actions.'
+                    'GITHUB_STEP_SUMMARY environment variable is not set. This API is only available in GitHub Actions.'
                 )
             writer = FileSummaryWriter(summary_path)
 
         self._writer = writer
         self._buffer = StringIO()
         self._file_path = (
-            self._writer.file_path if hasattr(self._writer, 'file_path') # type: ignore
+            self._writer.file_path
+            if hasattr(self._writer, 'file_path')  # type: ignore
             else None
         )
 
     def write(self, *, overwrite: bool = False) -> Self:
-        '''
+        """
         Write the summary buffer to the summary file.
 
         Parameters
@@ -122,7 +119,7 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         if overwrite:
             self._writer.clear()
 
@@ -134,42 +131,42 @@ class Summary:
         return self
 
     def clear(self) -> Self:
-        '''
+        """
         Clear both the buffer and the summary file.
 
         Returns
         -------
         Summary
             Self for chaining.
-        '''
+        """
         self._buffer = StringIO()
         self._writer.clear()
         return self
 
     def stringify(self) -> str:
-        '''
+        """
         Get the current buffer content as a string.
 
         Returns
         -------
         str
             The markdown content in the buffer.
-        '''
+        """
         return self._buffer.getvalue()
 
     def is_empty(self) -> bool:
-        '''
+        """
         Check if the buffer is empty.
 
         Returns
         -------
         bool
             True if buffer has no content.
-        '''
+        """
         return self._buffer.tell() == 0
 
     def add_raw(self, text: str, *, add_eol: bool = False) -> Self:
-        '''
+        """
         Add raw text to the summary.
 
         Parameters
@@ -183,25 +180,25 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         self._buffer.write(text)
         if add_eol:
             self._buffer.write(os.linesep)
         return self
 
     def add_eol(self) -> Self:
-        '''
+        """
         Add an end-of-line character.
 
         Returns
         -------
         Summary
             Self for chaining.
-        '''
+        """
         return self.add_raw(os.linesep)
 
     def add_heading(self, text: str, *, level: int = 1) -> Self:
-        '''
+        """
         Add a markdown heading.
 
         Parameters
@@ -220,7 +217,7 @@ class Summary:
         ------
         ValueError
             If level is not between 1 and 6.
-        '''
+        """
         if not 1 <= level <= 6:
             raise ValueError(f'Heading level must be 1-6, got {level}')
 
@@ -228,7 +225,7 @@ class Summary:
         return self.add_raw(f'{prefix} {text}', add_eol=True).add_eol()
 
     def add_paragraph(self, text: str) -> Self:
-        '''
+        """
         Add a paragraph with proper spacing.
 
         Parameters
@@ -240,11 +237,11 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         return self.add_raw(text, add_eol=True).add_eol()
 
     def add_text(self, text: str) -> Self:
-        '''
+        """
         Add text without additional formatting.
 
         Parameters
@@ -256,16 +253,11 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         return self.add_raw(text)
 
-    def add_code_block(
-        self,
-        code: str,
-        *,
-        lang: str | None = None
-    ) -> Self:
-        '''
+    def add_code_block(self, code: str, *, lang: str | None = None) -> Self:
+        """
         Add a fenced code block with optional syntax highlighting.
 
         Parameters
@@ -279,7 +271,7 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         lang_spec = lang or ''
         return (
             self.add_raw(f'```{lang_spec}', add_eol=True)
@@ -288,13 +280,8 @@ class Summary:
             .add_eol()
         )
 
-    def add_list(
-        self,
-        items: list[str | list[str]],
-        *,
-        ordered: bool = False
-    ) -> Self:
-        '''
+    def add_list(self, items: list[str | list[str]], *, ordered: bool = False) -> Self:
+        """
         Add a list (ordered or unordered).
 
         Parameters
@@ -308,12 +295,13 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
+
         def render_items(items: list[str | list[str]], depth: int = 0) -> None:
             indent = '  ' * depth
             for i, item in enumerate(items, 1):
                 if isinstance(item, list):
-                    render_items(item, depth + 1) # type: ignore
+                    render_items(item, depth + 1)  # type: ignore
                 else:
                     marker = f'{i}.' if ordered and depth == 0 else '-'
                     self.add_raw(f'{indent}{marker} {item}', add_eol=True)
@@ -322,7 +310,7 @@ class Summary:
         return self.add_eol()
 
     def add_table(self, rows: list[list[str]]) -> Self:
-        '''
+        """
         Add a markdown table.
 
         Parameters
@@ -339,7 +327,7 @@ class Summary:
         ------
         ValueError
             If table has no rows or inconsistent columns.
-        '''
+        """
         if not rows:
             raise ValueError('Table must have at least one row')
 
@@ -356,12 +344,8 @@ class Summary:
 
         return self.add_eol()
 
-    def add_details(
-        self,
-        label: str,
-        content: str
-    ) -> Self:
-        '''
+    def add_details(self, label: str, content: str) -> Self:
+        """
         Add a collapsible details section.
 
         Parameters
@@ -375,7 +359,7 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         return (
             self.add_raw('<details>', add_eol=True)
             .add_raw(f'<summary>{label}</summary>', add_eol=True)
@@ -387,15 +371,9 @@ class Summary:
         )
 
     def add_image(
-        self,
-        src: str,
-        alt: str,
-        *,
-        title: str | None = None,
-        width: int | None = None,
-        height: int | None = None
+        self, src: str, alt: str, *, title: str | None = None, width: int | None = None, height: int | None = None
     ) -> Self:
-        '''
+        """
         Add an image.
 
         Parameters
@@ -415,7 +393,7 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         img_tag = f'<img src="{src}" alt="{alt}"'
 
         if title:
@@ -430,29 +408,29 @@ class Summary:
         return self.add_raw(img_tag, add_eol=True).add_eol()
 
     def add_separator(self) -> Self:
-        '''
+        """
         Add a horizontal separator.
 
         Returns
         -------
         Summary
             Self for chaining.
-        '''
+        """
         return self.add_raw('---', add_eol=True).add_eol()
 
     def add_break(self) -> Self:
-        '''
+        """
         Add a line break.
 
         Returns
         -------
         Summary
             Self for chaining.
-        '''
+        """
         return self.add_raw('<br>', add_eol=True)
 
     def add_quote(self, text: str, *, cite: str | None = None) -> Self:
-        '''
+        """
         Add a block quote.
 
         Parameters
@@ -466,7 +444,7 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         lines = text.strip().split('\n')
         for line in lines:
             self.add_raw(f'> {line}', add_eol=True)
@@ -477,7 +455,7 @@ class Summary:
         return self.add_eol()
 
     def add_link(self, text: str, href: str) -> Self:
-        '''
+        """
         Add an inline link.
 
         Parameters
@@ -491,9 +469,8 @@ class Summary:
         -------
         Summary
             Self for chaining.
-        '''
+        """
         return self.add_raw(f'[{text}]({href})')
-
 
 
 __all__ = [

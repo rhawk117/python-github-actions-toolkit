@@ -1,16 +1,15 @@
 from .main import (
+    ExecError,
+    ExecListeners,
+    ExecOptions,
+    ExecResult,
     exec,
     exec_async,
     exec_context,
     exec_context_async,
     get_exec_output,
     get_exec_output_async,
-    ExecError,
-    ExecOptions,
-    ExecResult,
-    ExecListeners
 )
-
 
 __all__ = [
     'exec',
@@ -22,5 +21,5 @@ __all__ = [
     'ExecError',
     'ExecOptions',
     'ExecListeners',
-    'ExecResult'
+    'ExecResult',
 ]

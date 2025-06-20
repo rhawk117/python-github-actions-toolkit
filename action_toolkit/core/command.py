@@ -9,20 +9,16 @@ https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow
 """
 
 from __future__ import annotations
-from logging import warn
+
 import os
 import sys
 import warnings
-from contextlib import contextmanager
 
+from contextlib import contextmanager
 from typing import TYPE_CHECKING
+
 from .internals import commands
-from .internals.interfaces import (
-    ExitCode,
-    AnnotationProperties,
-    WorkflowCommand,
-    WorkflowEnv
-)
+from .internals.interfaces import AnnotationProperties, ExitCode, WorkflowCommand, WorkflowEnv
 
 if TYPE_CHECKING:
     from action_toolkit.corelib.types.core import StringOrException
@@ -57,23 +53,19 @@ def set_output(*, name: str, value: IOValue) -> None:
     output_file = os.environ.get(WorkflowEnv.GITHUB_OUTPUT, None)
     if output_file:
         commands.issue_file_command(
-            "OUTPUT",
+            'OUTPUT',
             commands.prepare_key_value_message(name, value),
             file_path=output_file
         )
-    else:
-        warnings.warn(
-            "Could not find GITHUB_OUTPUT environment variable, "
-            "and had to use set-output command instead. This approach is deprecated and "
-            "could not longer be functioning.",
-            category=RuntimeWarning,
-            stacklevel=2
-        )
-        commands.issue_command(
-            command=WorkflowCommand.SET_OUTPUT,
-            properties={"name": name},
-            message=value
-        )
+        return
+
+    commands.issue_command(
+        command=WorkflowCommand.SET_OUTPUT,
+        properties={'name': name},
+        message=value
+    )
+
+
 
 
 def set_command_echo(*, enabled: bool) -> None:
@@ -96,9 +88,10 @@ def set_command_echo(*, enabled: bool) -> None:
     >>> # Disable command echoing (default)
     >>> set_command_echo(enabled=False)
     """
-    commands.issue(name=WorkflowCommand.ECHO, message="on" if enabled else "off")
+    commands.issue(name=WorkflowCommand.ECHO, message='on' if enabled else 'off')
 
-def set_failed(*, message: str | Exception) -> None:
+
+def fail(message: str | Exception) -> None:
     """
     Set the action status to failed and exit.
 
@@ -143,7 +136,7 @@ def is_debug() -> bool:
     >>> if is_debug():
     ...     debug(message='Detailed debug information...')
     """
-    return os.environ.get(WorkflowEnv.RUNNER_DEBUG, "0") == "1"
+    return os.environ.get(WorkflowEnv.RUNNER_DEBUG, '0') == '1'
 
 
 def export_variable(*, name: str, value: IOValue) -> None:
@@ -177,25 +170,22 @@ def export_variable(*, name: str, value: IOValue) -> None:
     env_file = os.environ.get(WorkflowEnv.GITHUB_ENV, None)
     if env_file:
         commands.issue_file_command(
-            "ENV",
+            'ENV',
             commands.prepare_key_value_message(name, value),
             file_path=env_file,
         )
     else:
         warnings.warn(
-            "Could not find GITHUB_ENV environment variable,  "
-            "using set-env command instead. This approach is depracated and "
-            "may not work in all environments.",
+            'Could not find GITHUB_ENV environment variable,  '
+            'using set-env command instead. This approach is depracated and '
+            'may not work in all environments.',
             category=RuntimeWarning,
-            stacklevel=2
+            stacklevel=2,
         )
-        commands.issue_command(
-            command=WorkflowCommand.SET_ENV,
-            properties={"name": name},
-            message=value
-        )
+        commands.issue_command(command=WorkflowCommand.SET_ENV, properties={'name': name}, message=value)
 
-def set_secret(*, secret: str | IOValue) -> None:
+
+def set_secret(secret: str | IOValue) -> None:
     """
     Register a secret which will get masked from logs, equivalent to add-mask
     command.
@@ -214,21 +204,17 @@ def set_secret(*, secret: str | IOValue) -> None:
     >>> set_secret(secret={'apiKey': 'secret-key'})  # JSON serialized
     """
     try:
-        commands.issue_command(
-            command=WorkflowCommand.ADD_MASK,
-            properties={},
-            message=secret
-        )
+        commands.issue_command(command=WorkflowCommand.ADD_MASK, properties={}, message=secret)
     except Exception as e:
         warnings.warn(
-            f"!!! WARNING !!! Could not set secret with add-mask command: {e}. "
-            "This may be due to the command not being supported in this environment. ",
+            f'!!! WARNING !!! Could not set secret with add-mask command: {e}. '
+            'This may be due to the command not being supported in this environment. ',
             category=RuntimeWarning,
             stacklevel=2,
         )
 
 
-def add_path(*, path: StringOrPathlib) -> None:
+def add_path(path: StringOrPathlib) -> None:
     """
     Prepend a directory to the system PATH.
 
@@ -247,26 +233,26 @@ def add_path(*, path: StringOrPathlib) -> None:
     """
     path_str = str(path)
 
-    current_path = os.environ.get("PATH", "")
-    if not current_path:
+    current_path = os.environ.get('PATH', None)
+    if current_path is None:
         warnings.warn(
-            "The PATH environment variable is not set. "
-            "This may cause issues with finding executables.",
+            'The PATH environment variable is not set. This may cause issues with finding executables.',
             category=RuntimeWarning,
-            stacklevel=2,
+            stacklevel=2
         )
+        current_path = ''
 
-    os.environ["PATH"] = f"{path_str}{os.pathsep}{current_path}"
+    os.environ['PATH'] = f'{path_str}{os.pathsep}{current_path}'
 
     path_file = os.environ.get(WorkflowEnv.GITHUB_PATH, None)
     if path_file and os.path.exists(path_file):
         os.makedirs(os.path.dirname(path_file), exist_ok=True)
-        with open(path_file, "a", encoding="utf-8") as f:
+        with open(path_file, 'a', encoding='utf-8') as f:
             f.write(path_str + os.linesep)
     else:
         raise RuntimeError(
-            "The ::add-path:: command requires the GITHUB_PATH environment variable and"
-            " is deprecated and disabled. The GITHUB_PATH environment variable is not set or does not exist."
+            'The ::add-path:: command requires the GITHUB_PATH environment variable and'
+            ' is deprecated and disabled. The GITHUB_PATH environment variable is not set or does not exist.'
         )
 
 
@@ -294,7 +280,7 @@ def get_state(*, name: str) -> str:
     >>> if temp_dir:
     ...     cleanup_temp_dir(temp_dir)
     """
-    return os.environ.get(f"STATE_{name}", "")
+    return os.environ.get(f'STATE_{name}', '')
 
 
 def save_state(*, name: str, value: IOValue) -> None:
@@ -327,18 +313,19 @@ def save_state(*, name: str, value: IOValue) -> None:
     state_file = os.environ.get(WorkflowEnv.GITHUB_STATE, None)
     if state_file:
         commands.issue_file_command(
-            "STATE",
+            'STATE',
             commands.prepare_key_value_message(name, value),
             file_path=state_file,
         )
     else:
         commands.issue_command(
             command=WorkflowCommand.SAVE_STATE,
-            properties={"name": name},
+            properties={'name': name},
             message=value,
         )
 
-def debug(*, message: str) -> None:
+
+def debug(message: str) -> None:
     """
     Write debug message to log.
 
@@ -354,11 +341,8 @@ def debug(*, message: str) -> None:
     --------
     >>> debug(message='Entering function X with params Y')
     """
-    commands.issue_command(
-        command=WorkflowCommand.DEBUG,
-        properties={},
-        message=message
-    )
+    commands.issue_command(command=WorkflowCommand.DEBUG, properties={}, message=message)
+
 
 def notice(message: str, *, properties: AnnotationProperties | None = None) -> None:
     """
@@ -380,27 +364,14 @@ def notice(message: str, *, properties: AnnotationProperties | None = None) -> N
 
     >>> notice(
     ...     message='Configuration updated',
-    ...     properties=AnnotationProperties(
-    ...         title='Config Change',
-    ...         file='config.yaml',
-    ...         startLine=10
-    ...     )
+    ...     properties=AnnotationProperties(title='Config Change', file='config.yaml', startLine=10),
     ... )
     """
-    cmd_properties = commands.to_command_properties(
-        annotation_properties=properties or AnnotationProperties()
-    )
-    commands.issue_command(
-        command=WorkflowCommand.NOTICE,
-        properties=cmd_properties,
-        message=message
-    )
+    cmd_properties = commands.to_command_properties(annotation_properties=properties or AnnotationProperties())
+    commands.issue_command(command=WorkflowCommand.NOTICE, properties=cmd_properties, message=message)
 
-def warning(
-    message: StringOrException,
-    *,
-    properties: AnnotationProperties | None = None
-) -> None:
+
+def warning(message: StringOrException, *, properties: AnnotationProperties | None = None) -> None:
     """
     Write a warning message to log.
 
@@ -420,28 +391,14 @@ def warning(
 
     >>> warning(
     ...     message='Low disk space',
-    ...     properties=AnnotationProperties(
-    ...         title='Resource Warning',
-    ...         file='disk_check.py',
-    ...         startLine=45
-    ...     )
+    ...     properties=AnnotationProperties(title='Resource Warning', file='disk_check.py', startLine=45),
     ... )
     """
-    cmd_properties = commands.to_command_properties(
-        annotation_properties=properties or AnnotationProperties()
-    )
-    commands.issue_command(
-        command=WorkflowCommand.WARNING,
-        properties=cmd_properties,
-        message=str(message)
-    )
+    cmd_properties = commands.to_command_properties(annotation_properties=properties or AnnotationProperties())
+    commands.issue_command(command=WorkflowCommand.WARNING, properties=cmd_properties, message=str(message))
 
 
-def error(
-    message: StringOrException,
-    *,
-    properties: AnnotationProperties | None = None
-) -> None:
+def error(message: StringOrException, *, properties: AnnotationProperties | None = None) -> None:
     """
     Write an error message to log.
 
@@ -463,22 +420,12 @@ def error(
     ...     process_file()
     ... except Exception as e:
     ...     error(
-    ...         message=e,
-    ...         properties=AnnotationProperties(
-    ...             title='Processing Error',
-    ...             file='processor.py',
-    ...             startLine=102
-    ...         )
+    ...         message=e, properties=AnnotationProperties(title='Processing Error', file='processor.py', startLine=102)
     ...     )
     """
-    cmd_properties = commands.to_command_properties(
-        annotation_properties=properties or AnnotationProperties()
-    )
-    commands.issue_command(
-        command=WorkflowCommand.ERROR,
-        properties=cmd_properties,
-        message=str(message)
-    )
+    cmd_properties = commands.to_command_properties(annotation_properties=properties or AnnotationProperties())
+    commands.issue_command(command=WorkflowCommand.ERROR, properties=cmd_properties, message=str(message))
+
 
 def start_group(*, name: str) -> None:
     """
@@ -505,6 +452,7 @@ def start_group(*, name: str) -> None:
     """
     commands.issue(name=WorkflowCommand.GROUP, message=name)
 
+
 def end_group() -> None:
     """
     End an output group.
@@ -524,6 +472,7 @@ def end_group() -> None:
     >>> end_group()
     """
     commands.issue(name=WorkflowCommand.ENDGROUP)
+
 
 @contextmanager
 def group(*, name: str):

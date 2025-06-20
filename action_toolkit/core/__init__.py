@@ -1,39 +1,25 @@
 from .command import (
-    set_output,
+    add_path,
+    debug,
+    end_group,
+    error,
+    export_variable,
+    get_state,
+    group,
+    is_debug,
+    notice,
+    save_state,
     set_command_echo,
     set_failed,
-    is_debug,
-    export_variable,
+    set_output,
     set_secret,
-    add_path,
-    get_state,
-    save_state,
-    debug,
-    notice,
-    warning,
-    error,
     start_group,
-    end_group,
-    group
+    warning,
 )
-from .internals.interfaces import (
-    AnnotationProperties,
-    WorkflowCommand,
-    WorkflowEnv
-)
-from .path_utils import (
-    to_win32_path,
-    to_platform_path,
-    normalize_path,
-    is_absolute,
-    get_relative_path
-)
-from .summary import (
-    SummaryWriter,
-    FileSummaryWriter,
-    Summary
-)
+from .internals.interfaces import AnnotationProperties, WorkflowCommand, WorkflowEnv
+from .path_utils import get_relative_path, is_absolute, normalize_path, to_platform_path, to_win32_path
 from .platform_utils import get_platform
+from .summary import FileSummaryWriter, Summary, SummaryWriter
 
 __all__ = [
     'set_output',
@@ -63,5 +49,5 @@ __all__ = [
     'SummaryWriter',
     'FileSummaryWriter',
     'Summary',
-    'get_platform'
+    'get_platform',
 ]

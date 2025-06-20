@@ -1,14 +1,15 @@
 import asyncio
+import functools
 
 from collections.abc import Awaitable, Callable
-import functools
 from typing import ParamSpec, TypeVar, get_type_hints
 
 P = ParamSpec('P')
 R = TypeVar('R')
 
+
 def asyncify(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
-    '''Converts a synchronous function to an asynchronous one using
+    """Converts a synchronous function to an asynchronous one using
     asyncio.to_thread
 
     Parameters
@@ -20,7 +21,7 @@ def asyncify(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
     -------
     Callable[P, Awaitable[R]]
         _the async wrapped function_
-    '''
+    """
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
@@ -33,4 +34,3 @@ def asyncify(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
         wrapper.__annotations__['return'] = f'Awaitable[{return_type}]'
 
     return wrapper
-

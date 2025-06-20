@@ -1,38 +1,39 @@
 import io
 import os
-import sys
 import tempfile
 import warnings
+
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
+
 from action_toolkit.core.command import (
-    set_output,
+    add_path,
+    debug,
+    end_group,
+    error,
+    export_variable,
+    get_state,
+    group,
+    is_debug,
+    notice,
+    save_state,
     set_command_echo,
     set_failed,
-    is_debug,
-    export_variable,
+    set_output,
     set_secret,
-    add_path,
-    get_state,
-    save_state,
-    debug,
-    notice,
-    warning,
-    error,
     start_group,
-    end_group,
-    group
+    warning,
 )
-from action_toolkit.core.internals.interfaces import WorkflowEnv, AnnotationProperties
+from action_toolkit.core.internals.interfaces import AnnotationProperties, WorkflowEnv
 
 
 class TestSetOutput:
-    '''Test cases for set_output function'''
+    """Test cases for set_output function"""
 
     def test_output_with_file(self):
-        '''Test output using file-based approach'''
+        """Test output using file-based approach"""
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             temp_path = f.name
 
@@ -50,7 +51,7 @@ class TestSetOutput:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_output_fallback_command(self, mock_stdout):
-        '''Test output using command-based fallback'''
+        """Test output using command-based fallback"""
         with patch.dict(os.environ, {}, clear=True):
             set_output(name='myoutput', value='myvalue')
 
@@ -58,7 +59,7 @@ class TestSetOutput:
             assert '::set-output name=myoutput::myvalue' in output
 
     def test_output_complex_values(self):
-        '''Test output with complex values'''
+        """Test output with complex values"""
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             temp_path = f.name
 
@@ -75,29 +76,29 @@ class TestSetOutput:
 
 
 class TestSetCommandEcho:
-    '''Test cases for set_command_echo function'''
+    """Test cases for set_command_echo function"""
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_enable_echo(self, mock_stdout):
-        '''Test enabling command echo'''
+        """Test enabling command echo"""
         set_command_echo(enabled=True)
         output = mock_stdout.getvalue()
         assert '::echo::on' in output
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_disable_echo(self, mock_stdout):
-        '''Test disabling command echo'''
+        """Test disabling command echo"""
         set_command_echo(enabled=False)
         output = mock_stdout.getvalue()
         assert '::echo::off' in output
 
 
 class TestSetFailed:
-    '''Test cases for set_failed function'''
+    """Test cases for set_failed function"""
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_set_failed_with_string(self, mock_stdout):
-        '''Test set_failed with string message'''
+        """Test set_failed with string message"""
         with pytest.raises(SystemExit) as exc_info:
             set_failed(message='Action failed')
 
@@ -107,7 +108,7 @@ class TestSetFailed:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_set_failed_with_exception(self, mock_stdout):
-        '''Test set_failed with exception'''
+        """Test set_failed with exception"""
         test_error = ValueError('Invalid value')
 
         with pytest.raises(SystemExit) as exc_info:
@@ -119,20 +120,20 @@ class TestSetFailed:
 
 
 class TestIsDebug:
-    '''Test cases for is_debug function'''
+    """Test cases for is_debug function"""
 
     def test_debug_disabled(self) -> None:
-        '''Test debug mode disabled by default'''
+        """Test debug mode disabled by default"""
         with patch.dict(os.environ, {}, clear=True):
             assert is_debug() is False
 
     def test_debug_enabled(self) -> None:
-        '''Test debug mode enabled'''
+        """Test debug mode enabled"""
         with patch.dict(os.environ, {WorkflowEnv.RUNNER_DEBUG: '1'}):
             assert is_debug() is True
 
     def test_debug_other_values(self):
-        '''Test debug mode with other values'''
+        """Test debug mode with other values"""
         with patch.dict(os.environ, {WorkflowEnv.RUNNER_DEBUG: '0'}):
             assert is_debug() is False
 
@@ -141,10 +142,10 @@ class TestIsDebug:
 
 
 class TestExportVariable:
-    '''Test cases for export_variable function'''
+    """Test cases for export_variable function"""
 
     def test_export_with_file(self):
-        '''Test export using file-based approach'''
+        """Test export using file-based approach"""
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             temp_path = f.name
 
@@ -165,7 +166,7 @@ class TestExportVariable:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_export_fallback_command(self, mock_stdout):
-        '''Test export using command-based fallback'''
+        """Test export using command-based fallback"""
         with patch.dict(os.environ, {}, clear=True):
             export_variable(name='TEST_VAR', value=42)
 
@@ -177,41 +178,41 @@ class TestExportVariable:
 
 
 class TestSetSecret:
-    '''Test cases for set_secret function'''
+    """Test cases for set_secret function"""
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_set_secret_string(self, mock_stdout):
-        '''Test masking a string secret'''
+        """Test masking a string secret"""
         set_secret(secret='my-password-123')
         output = mock_stdout.getvalue()
         assert '::add-mask::my-password-123' in output
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_set_secret_complex(self, mock_stdout):
-        '''Test masking complex values'''
+        """Test masking complex values"""
         set_secret(secret={'apiKey': 'secret-key'})
         output = mock_stdout.getvalue()
         assert '::add-mask::{"apiKey":"secret-key"}' in output
 
     @patch('action_toolkit.core.internals.commands.issue_command')
     def test_set_secret_with_error(self, mock_issue_command):
-        '''Test warning when add-mask fails'''
-        mock_issue_command.side_effect = Exception("Command not supported")
+        """Test warning when add-mask fails"""
+        mock_issue_command.side_effect = Exception('Command not supported')
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+            warnings.simplefilter('always')
             set_secret(secret='test-secret')
 
             assert len(w) == 1
-            assert "WARNING" in str(w[0].message)
-            assert "add-mask command" in str(w[0].message)
+            assert 'WARNING' in str(w[0].message)
+            assert 'add-mask command' in str(w[0].message)
 
 
 class TestAddPath:
-    '''Test cases for add_path function'''
+    """Test cases for add_path function"""
 
     def test_add_path_with_file(self):
-        '''Test adding path using file-based approach'''
+        """Test adding path using file-based approach"""
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             temp_path = f.name
 
@@ -231,9 +232,8 @@ class TestAddPath:
             os.unlink(temp_path)
             os.environ['PATH'] = original_path
 
-
     def test_add_path_with_path_object(self):
-        '''Test adding Path object'''
+        """Test adding Path object"""
         original_path = os.environ.get('PATH', '')
         path_to_add = Path.home() / '.local' / 'bin'
 
@@ -245,22 +245,22 @@ class TestAddPath:
             os.environ['PATH'] = original_path
 
     def test_add_path_empty_original(self):
-        '''Test adding path when PATH is empty'''
+        """Test adding path when PATH is empty"""
         with patch.dict(os.environ, {'PATH': ''}):
             with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
+                warnings.simplefilter('always')
                 add_path(path='/new/path')
 
                 assert len(w) == 1
-                assert "PATH environment variable is not set" in str(w[0].message)
-                assert os.environ['PATH'] == f"/new/path{os.pathsep}"
+                assert 'PATH environment variable is not set' in str(w[0].message)
+                assert os.environ['PATH'] == f'/new/path{os.pathsep}'
 
 
 class TestState:
-    '''Test cases for save_state and get_state functions'''
+    """Test cases for save_state and get_state functions"""
 
     def test_save_state_with_file(self):
-        '''Test saving state using file-based approach'''
+        """Test saving state using file-based approach"""
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             temp_path = f.name
 
@@ -278,7 +278,7 @@ class TestState:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_save_state_fallback_command(self, mock_stdout):
-        '''Test saving state using command-based fallback'''
+        """Test saving state using command-based fallback"""
         with patch.dict(os.environ, {}, clear=True):
             save_state(name='counter', value=42)
 
@@ -286,43 +286,39 @@ class TestState:
             assert '::save-state name=counter::42' in output
 
     def test_get_state(self):
-        '''Test retrieving saved state'''
+        """Test retrieving saved state"""
         with patch.dict(os.environ, {'STATE_build_id': '12345'}):
             result = get_state(name='build_id')
             assert result == '12345'
 
     def test_get_state_missing(self):
-        '''Test retrieving missing state'''
+        """Test retrieving missing state"""
         with patch.dict(os.environ, {}, clear=True):
             result = get_state(name='missing')
             assert result == ''
 
 
 class TestLogging:
-    '''Test cases for logging functions'''
+    """Test cases for logging functions"""
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_debug(self, mock_stdout):
-        '''Test debug logging'''
+        """Test debug logging"""
         debug(message='Debug information')
         output = mock_stdout.getvalue()
         assert '::debug::Debug information' in output
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_notice_simple(self, mock_stdout):
-        '''Test simple notice'''
+        """Test simple notice"""
         notice('Important message')
         output = mock_stdout.getvalue()
         assert '::notice::Important message' in output
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_notice_with_properties(self, mock_stdout):
-        '''Test notice with annotation properties'''
-        props = AnnotationProperties(
-            title='Build Notice',
-            file='build.py',
-            startLine=42
-        )
+        """Test notice with annotation properties"""
+        props = AnnotationProperties(title='Build Notice', file='build.py', startLine=42)
         notice('Build completed', properties=props)
 
         output = mock_stdout.getvalue()
@@ -334,14 +330,14 @@ class TestLogging:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_warning_string(self, mock_stdout):
-        '''Test warning with string message'''
+        """Test warning with string message"""
         warning('Deprecated function')
         output = mock_stdout.getvalue()
         assert '::warning::Deprecated function' in output
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_warning_exception(self, mock_stdout):
-        '''Test warning with exception'''
+        """Test warning with exception"""
         exc = ValueError('Invalid configuration')
         warning(exc)
         output = mock_stdout.getvalue()
@@ -349,14 +345,9 @@ class TestLogging:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_error_with_properties(self, mock_stdout):
-        '''Test error with annotation properties'''
+        """Test error with annotation properties"""
         props = AnnotationProperties(
-            title='Syntax Error',
-            file='main.py',
-            startLine=10,
-            endLine=10,
-            startColumn=5,
-            endColumn=15
+            title='Syntax Error', file='main.py', startLine=10, endLine=10, startColumn=5, endColumn=15
         )
         error('Undefined variable', properties=props)
 
@@ -367,11 +358,11 @@ class TestLogging:
 
 
 class TestGrouping:
-    '''Test cases for grouping functions'''
+    """Test cases for grouping functions"""
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_start_end_group(self, mock_stdout):
-        '''Test start and end group'''
+        """Test start and end group"""
         start_group(name='Build Steps')
         output = mock_stdout.getvalue()
         assert '::group::Build Steps' in output
@@ -385,7 +376,7 @@ class TestGrouping:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_group_context_manager(self, mock_stdout):
-        '''Test group context manager'''
+        """Test group context manager"""
         with group(name='Test Section'):
             pass
 
@@ -395,7 +386,7 @@ class TestGrouping:
 
     @patch('sys.stdout', new_callable=io.StringIO)
     def test_group_context_manager_with_exception(self, mock_stdout):
-        '''Test group context manager handles exceptions'''
+        """Test group context manager handles exceptions"""
         try:
             with group(name='Error Section'):
                 raise ValueError('Test error')

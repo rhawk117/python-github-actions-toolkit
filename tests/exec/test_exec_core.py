@@ -1,52 +1,44 @@
-'''Tests for action_toolkit.exec module'''
+"""Tests for action_toolkit.exec module"""
 
 import subprocess
 import sys
+
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+
 from action_toolkit.exec import (
+    ExecError,
+    ExecListeners,
+    ExecOptions,
+    ExecResult,
     exec,
     exec_async,
     exec_context,
     exec_context_async,
     get_exec_output,
     get_exec_output_async,
-    ExecError,
-    ExecOptions,
-    ExecListeners,
-    ExecResult
 )
 
 
 class TestExecResult:
-    '''Test cases for ExecResult class'''
+    """Test cases for ExecResult class"""
 
     def test_success_property(self):
-        '''Test success property calculation'''
-        success_result = ExecResult(
-            exit_code=0,
-            stdout='output',
-            stderr='',
-            command='test'
-        )
+        """Test success property calculation"""
+        success_result = ExecResult(exit_code=0, stdout='output', stderr='', command='test')
         assert success_result.success is True
 
-        failure_result = ExecResult(
-            exit_code=1,
-            stdout='',
-            stderr='error',
-            command='test'
-        )
+        failure_result = ExecResult(exit_code=1, stdout='', stderr='error', command='test')
         assert failure_result.success is False
 
 
 class TestExecOptions:
-    '''Test cases for ExecOptions class'''
+    """Test cases for ExecOptions class"""
 
     def test_default_options(self):
-        '''Test default option values'''
+        """Test default option values"""
         options = ExecOptions()
 
         assert options.cwd is None
@@ -58,7 +50,7 @@ class TestExecOptions:
         assert options.fail_on_stderr is False
 
     def test_custom_options(self):
-        '''Test custom option values'''
+        """Test custom option values"""
 
         options = ExecOptions(
             cwd='/tmp',
@@ -80,10 +72,10 @@ class TestExecOptions:
 
 
 class TestExecListeners:
-    '''Test cases for ExecListeners class'''
+    """Test cases for ExecListeners class"""
 
     def test_default_listeners(self):
-        '''Test default listener values'''
+        """Test default listener values"""
         listeners = ExecListeners()
 
         assert listeners.stdout is None
@@ -91,16 +83,12 @@ class TestExecListeners:
         assert listeners.debug is None
 
     def test_custom_listeners(self):
-        '''Test custom listener functions'''
+        """Test custom listener functions"""
         stdout_mock = Mock()
         stderr_mock = Mock()
         debug_mock = Mock()
 
-        listeners = ExecListeners(
-            stdout=stdout_mock,
-            stderr=stderr_mock,
-            debug=debug_mock
-        )
+        listeners = ExecListeners(stdout=stdout_mock, stderr=stderr_mock, debug=debug_mock)
 
         assert listeners.stdout is stdout_mock
         assert listeners.stderr is stderr_mock
@@ -108,16 +96,12 @@ class TestExecListeners:
 
 
 class TestExec:
-    '''Test cases for exec function'''
+    """Test cases for exec function"""
 
     @patch('subprocess.run')
     def test_successful_execution(self, mock_run):
-        '''Test successful command execution'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='output line',
-            stderr=''
-        )
+        """Test successful command execution"""
+        mock_run.return_value = Mock(returncode=0, stdout='output line', stderr='')
 
         result = exec('echo', ['hello'])
 
@@ -131,12 +115,8 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_failed_execution(self, mock_run):
-        '''Test failed command execution'''
-        mock_run.return_value = Mock(
-            returncode=1,
-            stdout='',
-            stderr='error message'
-        )
+        """Test failed command execution"""
+        mock_run.return_value = Mock(returncode=1, stdout='', stderr='error message')
 
         with pytest.raises(ExecError) as exc_info:
             exec('false')
@@ -148,12 +128,8 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_ignore_return_code(self, mock_run):
-        '''Test ignoring non-zero return codes'''
-        mock_run.return_value = Mock(
-            returncode=1,
-            stdout='',
-            stderr='error'
-        )
+        """Test ignoring non-zero return codes"""
+        mock_run.return_value = Mock(returncode=1, stdout='', stderr='error')
 
         options = ExecOptions(ignore_return_code=True)
         result = exec('false', options=options)
@@ -163,12 +139,8 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_fail_on_stderr(self, mock_run):
-        '''Test failing when stderr has content'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='output',
-            stderr='warning message'
-        )
+        """Test failing when stderr has content"""
+        mock_run.return_value = Mock(returncode=0, stdout='output', stderr='warning message')
 
         options = ExecOptions(fail_on_stderr=True)
 
@@ -179,15 +151,11 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_with_input(self, mock_run):
-        '''Test command with input'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='processed',
-            stderr=''
-        )
+        """Test command with input"""
+        mock_run.return_value = Mock(returncode=0, stdout='processed', stderr='')
 
         options = ExecOptions(input='test input')
-        result = exec('cat', options=options)
+        exec('cat', options=options)
 
         mock_run.assert_called_once()
         call_args = mock_run.call_args
@@ -195,12 +163,8 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_with_cwd(self, mock_run):
-        '''Test command with working directory'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='/tmp',
-            stderr=''
-        )
+        """Test command with working directory"""
+        mock_run.return_value = Mock(returncode=0, stdout='/tmp', stderr='')
 
         options = ExecOptions(cwd='/tmp')
         exec('pwd', options=options)
@@ -210,12 +174,8 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_with_env(self, mock_run):
-        '''Test command with environment variables'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='value',
-            stderr=''
-        )
+        """Test command with environment variables"""
+        mock_run.return_value = Mock(returncode=0, stdout='value', stderr='')
 
         options = ExecOptions(env={'CUSTOM_VAR': 'value'})
         exec('echo', ['$CUSTOM_VAR'], options=options)
@@ -227,7 +187,7 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_timeout_error(self, mock_run):
-        '''Test command timeout'''
+        """Test command timeout"""
         mock_run.side_effect = subprocess.TimeoutExpired(['sleep', '10'], 1)
 
         options = ExecOptions(timeout=1.0)
@@ -239,7 +199,7 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_file_not_found(self, mock_run):
-        '''Test command not found'''
+        """Test command not found"""
         mock_run.side_effect = FileNotFoundError()
 
         with pytest.raises(ExecError) as exc_info:
@@ -249,19 +209,14 @@ class TestExec:
 
     @patch('subprocess.run')
     def test_listeners(self, mock_run):
-        '''Test output listeners'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='line1\nline2',
-            stderr='error1\nerror2'
-        )
+        """Test output listeners"""
+        mock_run.return_value = Mock(returncode=0, stdout='line1\nline2', stderr='error1\nerror2')
 
         stdout_lines = []
         stderr_lines = []
 
         listeners = ExecListeners(
-            stdout=lambda line: stdout_lines.append(line),
-            stderr=lambda line: stderr_lines.append(line)
+            stdout=lambda line: stdout_lines.append(line), stderr=lambda line: stderr_lines.append(line)
         )
 
         exec('command', listeners=listeners)
@@ -271,11 +226,11 @@ class TestExec:
 
 
 class TestExecAsync:
-    '''Test cases for exec_async function'''
+    """Test cases for exec_async function"""
 
     @pytest.mark.asyncio
     async def test_successful_async_execution(self):
-        '''Test successful async command execution'''
+        """Test successful async command execution"""
         # Use a simple command that should work on most systems
         result = await exec_async('python', ['--version'])
 
@@ -285,13 +240,13 @@ class TestExecAsync:
 
     @pytest.mark.asyncio
     async def test_failed_async_execution(self):
-        '''Test failed async command execution'''
+        """Test failed async command execution"""
         with pytest.raises(ExecError):
             await exec_async('python', ['-c', 'exit(1)'])
 
     @pytest.mark.asyncio
     async def test_async_timeout(self):
-        '''Test async command timeout'''
+        """Test async command timeout"""
         options = ExecOptions(timeout=0.1)
 
         with pytest.raises(ExecError) as exc_info:
@@ -301,16 +256,12 @@ class TestExecAsync:
 
 
 class TestExecContext:
-    '''Test cases for exec_context function'''
+    """Test cases for exec_context function"""
 
     @patch('subprocess.run')
     def test_exec_context(self, mock_run):
-        '''Test execution context manager'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='test',
-            stderr=''
-        )
+        """Test execution context manager"""
+        mock_run.return_value = Mock(returncode=0, stdout='test', stderr='')
 
         with exec_context(cwd='/tmp', env={'TEST': 'value'}) as ctx:
             assert ctx.cwd == Path('/tmp')
@@ -323,7 +274,7 @@ class TestExecContext:
 
     @pytest.mark.asyncio
     async def test_exec_context_async(self):
-        '''Test async execution context manager'''
+        """Test async execution context manager"""
         async with exec_context_async(cwd=Path.cwd()) as ctx:
             assert ctx.cwd == Path.cwd()
 
@@ -332,40 +283,30 @@ class TestExecContext:
 
 
 class TestGetExecOutput:
-    '''Test cases for get_exec_output function'''
+    """Test cases for get_exec_output function"""
 
     @patch('subprocess.run')
     def test_get_output(self, mock_run):
-        '''Test getting command output'''
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout='expected output',
-            stderr=''
-        )
+        """Test getting command output"""
+        mock_run.return_value = Mock(returncode=0, stdout='expected output', stderr='')
 
         output = get_exec_output('echo', ['hello'])
         assert output == 'expected output'
 
     @pytest.mark.asyncio
     async def test_get_output_async(self):
-        '''Test getting async command output'''
+        """Test getting async command output"""
         output = await get_exec_output_async('python', ['--version'])
         assert 'Python' in output or len(output) > 0
 
 
-
-
 class TestExecError:
-    '''Test cases for ExecError exception'''
+    """Test cases for ExecError exception"""
 
     def test_exec_error_creation(self):
-        '''Test ExecError exception creation'''
+        """Test ExecError exception creation"""
         error = ExecError(
-            command='test command',
-            exit_code=1,
-            stdout='output',
-            stderr='error',
-            message='Custom message'
+            command='test command', exit_code=1, stdout='output', stderr='error', message='Custom message'
         )
 
         assert error.command == 'test command'
@@ -375,21 +316,18 @@ class TestExecError:
         assert 'Custom message' in str(error)
 
     def test_exec_error_default_message(self):
-        '''Test ExecError with default message'''
-        error = ExecError(
-            command='failed-command',
-            exit_code=2
-        )
+        """Test ExecError with default message"""
+        error = ExecError(command='failed-command', exit_code=2)
 
         assert 'failed with exit code 2' in str(error)
 
 
 @pytest.mark.integration
 class TestExecIntegration:
-    '''Integration tests using real commands'''
+    """Integration tests using real commands"""
 
     def test_python_version(self):
-        '''Test getting Python version'''
+        """Test getting Python version"""
         result = exec('python', ['--version'])
 
         assert result.success is True
@@ -397,7 +335,7 @@ class TestExecIntegration:
         assert 'Python' in version_output
 
     def test_echo_command(self):
-        '''Test simple echo command'''
+        """Test simple echo command"""
         if sys.platform.startswith('win'):
             result = exec('cmd', ['/c', 'echo', 'hello world'])
         else:
@@ -407,7 +345,7 @@ class TestExecIntegration:
         assert 'hello world' in result.stdout
 
     def test_working_directory(self):
-        '''Test command with working directory'''
+        """Test command with working directory"""
         options = ExecOptions(cwd=Path.cwd().parent)
 
         if sys.platform.startswith('win'):
@@ -420,7 +358,7 @@ class TestExecIntegration:
 
     @pytest.mark.asyncio
     async def test_async_python_version(self):
-        '''Test async Python version'''
+        """Test async Python version"""
         result = await exec_async('python', ['--version'])
 
         assert result.success is True

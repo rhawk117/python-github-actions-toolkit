@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
+
 from collections.abc import Callable, Generator
+from pathlib import Path
 from typing import (
     Any,
-    ClassVar,
     Generic,
     Protocol,
     TypeVar,
@@ -14,17 +13,15 @@ from typing import (
 
 T = TypeVar('T')
 
-from dataclasses import field
-
 
 class ParsableType(Protocol[T]):
     """Two simple static methods for (de)serialising one type."""
 
     @staticmethod
-    def parse(raw: str) -> T: ...  # noqa: D401
+    def parse(raw: str) -> T: ...
 
     @staticmethod
-    def serialize(value: T) -> str: ...  # noqa: D401
+    def serialize(value: T) -> str: ...
 
 
 class _TypeHandler(Generic[T]):
@@ -60,7 +57,7 @@ _HANDLERS: dict[type, _TypeHandler[Any]] = {
     bool: _TypeHandler(_bool_parse, lambda b: 'true' if b else 'false'),
     list: _TypeHandler(_list_parser, _list_serializer),
     dict: _TypeHandler(json.loads, json.dumps),
-    Path: _TypeHandler(Path, str)
+    Path: _TypeHandler(Path, str),
 }
 
 
