@@ -26,39 +26,45 @@ class SummaryTableRow:
 SUMMARY_ENV: Final[str] = 'GITHUB_STEP_SUMMARY'
 
 
+def resolve_summary_path() -> Path:
+    global SUMMARY_ENV
+    file_path = os.getenv(SUMMARY_ENV)
+    if not file_path:
+        raise RuntimeError(
+            f'Environment variable {SUMMARY_ENV} is not set. '
+            'Ensure you are running in a GitHub Actions environment that supports summaries.'
+        )
+    path = Path(file_path)
+
+    try:
+        path.read_text()
+    except Exception:
+        raise RuntimeError(
+            f'Failed to read summary file at {path}. '
+            'Ensure the file exists and is accessible.'
+        )
+
+    return path
+
+
 class Summary:
+    '''
+    Almost identical to the TypeScript implementation for the time being,
+    definitely not fully implemented or the most "pythonic" way to do this.
+    '''
+
     def __init__(self, overwrite: bool = False) -> None:
         """Initialize the summary with an empty StringIO buffer."""
         self._buffer = ''
-        self._file_path: Path | None = None
+        self._file_path: Path = resolve_summary_path()
         self._overwrite = overwrite
 
-    def _get_file_path(self) -> Path:
-
-        if self._file_path:
-            return self._file_path
-
-        global SUMMARY_ENV
-        file_path = os.getenv(SUMMARY_ENV)
-        if not file_path:
-            raise RuntimeError(
-                f'Environment variable {SUMMARY_ENV} is not set. '
-                'Ensure you are running in a GitHub Actions environment that supports summaries.'
-            )
-        path = Path(file_path)
-
-        try:
-            path.read_text()
-        except Exception as e:
-            raise RuntimeError(
-                f'Failed to read summary file at {path}. '
-                'Ensure the file exists and is accessible.'
-            )
-
-        self._file_path = path
-        return path
-
-    def _wrap(self, tag: str, content: str | None, attrs: dict[str, str] = {}) -> str:
+    def _wrap(
+        self,
+        tag: str,
+        content: str | None,
+        attrs: dict[str, str] = {}
+    ) -> str:
         """Wrap content in a markdown tag."""
         if content is None:
             return ''
@@ -71,7 +77,7 @@ class Summary:
         return f'<{tag} {html_attrs}>{content}</{tag}>'
 
     def write(self) -> Self:
-        path = self._get_file_path()
+        path = self._file_path
         if not path.is_file():
             raise RuntimeError(
                 f'Summary file {path} does not exist. '
@@ -120,10 +126,7 @@ class Summary:
         element = self._wrap(tag, content)
         return self.append_text(element, add_sep=True)
 
-    def add_table(
-        self,
-        rows: list[SummaryTableRow],
-    ) -> Self:
+    def add_table(self, rows: list[SummaryTableRow]) -> Self:
         """Add a table to the summary."""
         if not rows:
             return self
@@ -205,6 +208,6 @@ class Summary:
 
 
 __all__ = [
-   'Summary',
-   'SummaryTableRow'
+    'Summary',
+    'SummaryTableRow'
 ]
