@@ -7,7 +7,7 @@ Functions related to retrieving action inputs
 
 import os
 
-from .commands.exceptions import InputError
+from .exceptions import InputError
 from .internals.utils import get_input_name, parse_yaml_boolean, split_lines
 
 __all__ = ['get_input', 'get_multiline_input', 'get_bool_input']

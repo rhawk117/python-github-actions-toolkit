@@ -1,34 +1,19 @@
-"""
-**core.internals.types** module
-Type definitions and constants for GitHub Actions toolkit.
-
-This module provides type definitions, enums, and constants that mirror
-the TypeScript types in @actions/core and are provided for code readability
-and convience
-"""
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-from enum import IntEnum, StrEnum
-
-from ..exceptions import AnnotationError
 
 
-class ExitCode(IntEnum):
-    """
-    Standard exit codes.
+from ast import Not
+from enum import StrEnum
+from typing import NotRequired, TypeAlias
 
-    Mirrors the exit codes used in the TypeScript toolkit where
-    0 indicates success and 1 indicates failure, little verbose
-    but mirrors original sdk.
-    """
+import dataclasses
+from .exceptions import AnnotationError
 
-    Success = 0
-    Failure = 1
+CommandPropertyValue: TypeAlias = str | int | float | bool | None
+CommandValue: TypeAlias = str | int | float | bool | list | dict | None
 
 
-class WorkflowCommand(StrEnum):
+
+
+class GithubCommand(StrEnum):
     """
     GitHub Actions workflow commands.
 
@@ -56,22 +41,7 @@ class WorkflowCommand(StrEnum):
     FILE_COMMAND = 'file-command'  # for file commands (newer style)
 
 
-class LogLevel(StrEnum):
-    """
-    Log levels for GitHub Actions.
-
-    Corresponds to the different annotation levels available
-    in the GitHub Actions workflow commands.
-    """
-
-    DEBUG = 'debug'
-    INFO = 'info'
-    NOTICE = 'notice'
-    WARNING = 'warning'
-    ERROR = 'error'
-
-
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class AnnotationProperties:
     """
     Properties for workflow command annotations.
@@ -115,19 +85,11 @@ class AnnotationProperties:
                 )
 
 
-class WorkflowEnv(StrEnum):
-    """
-    Environment variables used in GitHub Actions workflows.
-
-    These are the environment variables that are set by the GitHub Actions
-    runner and can be used within actions.
-    """
-
-    GITHUB_OUTPUT = 'GITHUB_OUTPUT'
-    GITHUB_STATE = 'GITHUB_STATE'
-    GITHUB_PATH = 'GITHUB_PATH'
-    GITHUB_ENV = 'GITHUB_ENV'
-    RUNNER_DEBUG = 'RUNNER_DEBUG'
-    GITHUB_WORKSPACE = 'GITHUB_WORKSPACE'
-    GITHUB_ACTION = 'GITHUB_ACTION'
-    GITHUB_ACTION_PATH = 'GITHUB_ACTION_PATH'
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class Command:
+    '''
+    Represents an emittable Github Actions command.
+    '''
+    command: GithubCommand
+    properties: dict[str, CommandPropertyValue] = dataclasses.field(default_factory=dict)
+    message: CommandValue

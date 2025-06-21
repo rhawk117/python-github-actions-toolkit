@@ -2,7 +2,7 @@
 
 import pytest
 
-from action_toolkit.core.commands.exceptions import AnnotationError
+from action_toolkit.core.exceptions import AnnotationError
 from action_toolkit.core.internals.interfaces import AnnotationProperties, WorkflowCommand, WorkflowEnv
 from action_toolkit.corelib.types.core import YAML_BOOLEAN_FALSE, YAML_BOOLEAN_TRUE
 

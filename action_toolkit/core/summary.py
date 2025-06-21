@@ -16,7 +16,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Self
 
-from action_toolkit.core.commands.exceptions import CoreActionError
+from action_toolkit.core.exceptions import CoreActionError
 
 
 class SummaryWriter(ABC):
