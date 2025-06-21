@@ -13,27 +13,26 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import sys
-from tkinter import E
-import warnings
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Literal
 
-from .internals.interfaces import AnnotationProperties, ExitCode, WorkflowCommand, WorkflowEnv
-from . import cmd_utils
-from .environ_mapping import Environment
-from .models import GithubCommand, CommandPropertyValue, CommandValue, Command
+from . import utils
+from .models import (
+    GithubCommand,
+    CommandPropertyValue,
+    CommandValue,
+    Command,
+    AnnotationProperties
+)
 
 if TYPE_CHECKING:
     from action_toolkit.corelib.types.core import StringOrException
     from action_toolkit.corelib.types.io import IOValue, StringOrPathlib
 
 
-
-
-# def issue_file_command(command: Literal['ENV', 'OUTPUT', 'STATE'], message: str) -> None:
-#     path = Environment.get_pathvar(command)
-
+BOOLEAN_TRUE = frozenset(['true', 'yes', 'on', 'y', '1'])
+BOOLEAN_FALSE = frozenset(['false', 'no', 'off', 'n', '0'])
 
 
 def emit_command(
@@ -47,13 +46,14 @@ def emit_command(
 
     cmd = Command(
         command=name,
-        properties=properties, # type: ignore[assignment]
+        properties=properties,  # type: ignore[assignment]
         message=message
     )
 
-    emittable_string = cmd_utils.get_command_string(cmd)
+    emittable_string = utils.get_command_string(cmd)
     sys.stdout.write(f'{emittable_string}{os.linesep}')
     sys.stdout.flush()
+
 
 def emit(name: GithubCommand, message: CommandValue = '') -> None:
     """
@@ -79,55 +79,37 @@ def emit(name: GithubCommand, message: CommandValue = '') -> None:
 
 def emit_file_command(name: Literal['ENV', 'OUTPUT', 'STATE'], message: CommandValue) -> None:
     environ_key = f'GITHUB_{name.upper()}'
-    file_path = Environment.get_pathlike(environ_key)
-    if not file_path:
+    path_str = os.getenv(environ_key)
+    if not path_str:
         raise RuntimeError(
             f'The ::{name.lower()}:: command requires the {environ_key} environment variable and is deprecated.'
             ' The environment variable is not set or does not exist.'
         )
-
-    cmd_str = f'{cmd_utils.to_command_value(message)}{os.linesep}'
+    file_path = Path(path_str).expanduser().resolve()
+    cmd_str = f'{utils.to_command_value(message)}{os.linesep}'
     with file_path.open('a', encoding='utf-8') as f:
         f.write(cmd_str)
 
 
-def set_output(name: str, value: IOValue) -> None:
+def environ_contains(name: str) -> bool:
     """
-    Set the value of an output.
+    Check if the environment variable exists.
 
-    This function mirrors setOutput in core.ts. Output values can
-    be used by subsequent steps in the workflow.
+    This function checks if a specific environment variable is set.
+    It is used to determine if the newer file-based approach (GITHUB_ENV, GITHUB_OUTPUT)
+    is available.
 
     Parameters
     ----------
     name : str
-        Name of the output to set.
-    value : IOValue
-        Value to store. Non-string values will be JSON stringified.
+        Name of the environment variable to check.
 
-    Notes
-    -----
-    The function uses the newer file-based approach (GITHUB_OUTPUT)
-    when available, falling back to set-output command for compatibility.
-
-    Examples
-    --------
-    >>> set_output(name='result', value='success')
-    >>> set_output(name='count', value=42)
-    >>> set_output(name='data', value={'key': 'value'})
+    Returns
+    -------
+    bool
+        True if the environment variable exists, False otherwise.
     """
-
-    if Environment.contains('GITHUB_OUTPUT'):
-        return emit_file_command(
-            'OUTPUT',
-            cmd_utils.prepare_key_value_message(name, value),
-        )
-
-    sys.stdout.write(os.linesep)
-    emit_command(
-        name=GithubCommand.SET_OUTPUT,
-        message=cmd_utils.prepare_key_value_message(name, value),
-    )
+    return name in os.environ
 
 
 def export_variable(name: str, value: IOValue) -> None:
@@ -154,12 +136,13 @@ def export_variable(name: str, value: IOValue) -> None:
     >>> export_variable(name='MY_VAR', value='my value')
     >>> export_variable(name='BUILD_NUMBER', value=42)
     """
-    var_value = cmd_utils.to_command_value(value)
-    Environment.set_var(name, var_value)
-    if Environment.contains('GITHUB_ENV'):
+    var_value = utils.to_command_value(value)
+    os.environ[name] = var_value
+
+    if environ_contains('GITHUB_ENV'):
         return emit_file_command(
             'ENV',
-            cmd_utils.prepare_key_value_message(name, var_value),
+            utils.prepare_key_value_message(name, var_value),
         )
 
     emit_command(
@@ -200,25 +183,147 @@ def set_secret(secret: str) -> None:
 
 
 def add_path(path: StringOrPathlib) -> None:
-    if Environment.contains('GITHUB_PATH'):
+    if environ_contains('GITHUB_PATH'):
         emit_file_command('ENV', str(path))
     else:
         emit_command(GithubCommand.ADD_PATH, message=str(path))
 
-    appended_paths = f'{path}{os.pathsep}{Environment.get_var('PATH', '')}'
-    Environment.set_var('PATH', appended_paths)
+    appended_paths = f'{path}{os.pathsep}{os.getenv('PATH', '')}'
+    os.environ['PATH'] = appended_paths
 
 
 def get_input(
     name: str,
     *,
-    transformer: Callable[[str | None], Any] | None,
-    required: bool = False
+    required: bool = False,
+    trim_whitespace: bool = True
 ) -> str:
 
-    if not 
+    input_environ = f'INPUT_{name.upper()}'.replace('-', '_').upper()
+
+    input = os.environ.get(input_environ, '')
+
+    if not input and required:
+        raise ValueError(
+            f'Input required and not supplied: {name}'
+        )
+
+    if not trim_whitespace:
+        return input
+
+    return input.strip()
 
 
+def get_multiline_input(
+    name: str,
+    *,
+    required: bool = False,
+    trim_whitespace: bool = True
+) -> list[str]:
+    inputs = get_input(
+        name,
+        required=required,
+        trim_whitespace=trim_whitespace
+    )
+    input_lines = filter(
+        lambda x: x.strip() != '',
+        inputs.split('\n')
+    )
+
+    return [input_lines.strip() for input_lines in input_lines]
+
+
+def get_boolean_input(
+    name: str,
+    *,
+    required: bool = False,
+    trim_whitespace: bool = True
+) -> bool:
+    """
+    Get a boolean input value from the environment.
+
+    This function retrieves an input value and converts it to a boolean.
+    It supports 'true', 'false', and their variations, as well as
+    empty strings.
+
+    Parameters
+    ----------
+    name : str
+        Name of the input to retrieve.
+    required : bool, optional
+        Whether the input is required. Defaults to False.
+    trim_whitespace : bool, optional
+        Whether to trim whitespace from the input. Defaults to True.
+
+    Returns
+    -------
+    bool
+        The boolean value of the input.
+
+    Raises
+    ------
+    ValueError
+        If the input is required but not provided.
+
+    Examples
+    --------
+    >>> is_enabled = get_boolean_input('enable_feature', required=True)
+    """
+
+    input_value = get_input(
+        name,
+        required=required,
+        trim_whitespace=trim_whitespace
+    ).lower()
+
+    if not input_value and not required:
+        return False
+
+    in_bool_true = input_value in BOOLEAN_TRUE
+
+    if not in_bool_true or not input_value in BOOLEAN_FALSE:
+        raise ValueError(f'Invalid boolean input for {name}: {input_value}')
+
+    return in_bool_true
+
+
+def set_output(name: str, value: IOValue) -> None:
+    """
+    Set the value of an output.
+
+    This function mirrors setOutput in core.ts. Output values can
+    be used by subsequent steps in the workflow.
+
+    Parameters
+    ----------
+    name : str
+        Name of the output to set.
+    value : IOValue
+        Value to store. Non-string values will be JSON stringified.
+
+    Notes
+    -----
+    The function uses the newer file-based approach (GITHUB_OUTPUT)
+    when available, falling back to set-output command for compatibility.
+
+    Examples
+    --------
+    >>> set_output(name='result', value='success')
+    >>> set_output(name='count', value=42)
+    >>> set_output(name='data', value={'key': 'value'})
+    """
+
+    if environ_contains('GITHUB_OUTPUT'):
+        return emit_file_command(
+            'OUTPUT',
+            utils.prepare_key_value_message(name, value)
+        )
+
+    sys.stdout.write(os.linesep)
+    emit_command(
+        name=GithubCommand.SET_OUTPUT,
+        message=utils.prepare_key_value_message(name, value)
+    )
 
 
 def set_echo(enabled: bool) -> None:
@@ -236,10 +341,10 @@ def set_echo(enabled: bool) -> None:
     Examples
     --------
     >>> # Enable command echoing for debugging
-    >>> set_command_echo(enabled=True)
+    >>> set_echo(enabled=True)
 
     >>> # Disable command echoing (default)
-    >>> set_command_echo(enabled=False)
+    >>> set_echo(enabled=False)
     """
     emit(name=GithubCommand.ECHO, message='on' if enabled else 'off')
 
@@ -289,77 +394,7 @@ def is_debug() -> bool:
     >>> if is_debug():
     ...     debug(message='Detailed debug information...')
     """
-    return Environment.get_var('RUNNER_DEBUG', '0') == '1'
-
-
-
-def get_state(*, name: str) -> str:
-    """
-    Get the value of a saved state.
-
-    This function mirrors getState in core.ts. Retrieves state
-    that was previously saved with save_state.
-
-    Parameters
-    ----------
-    name : str
-        Name of the state to retrieve.
-
-    Returns
-    -------
-    str
-        The state value, or empty string if not found.
-
-    Examples
-    --------
-    >>> # Retrieve previously saved state
-    >>> temp_dir = get_state(name='temp_dir')
-    >>> if temp_dir:
-    ...     cleanup_temp_dir(temp_dir)
-    """
-    return os.environ.get(f'STATE_{name}', '')
-
-
-def save_state(*, name: str, value: IOValue) -> None:
-    """
-    Save state for sharing between pre/main/post actions.
-
-    This function mirrors saveState in core.ts. State can be
-    retrieved in subsequent action phases using get_state.
-
-    Parameters
-    ----------
-    name : str
-        Name of the state to store.
-    value : IOValue
-        Value to store. Non-string values will be JSON stringified.
-
-    Notes
-    -----
-    State is only available within the same action execution.
-    It cannot be accessed by other actions or steps.
-
-    Examples
-    --------
-    >>> # In main action
-    >>> save_state(name='temp_dir', value='/tmp/build-123')
-
-    >>> # In post action
-    >>> temp_dir = get_state(name='temp_dir')
-    """
-    state_file = os.environ.get(WorkflowEnv.GITHUB_STATE, None)
-    if state_file:
-        commands.issue_file_command(
-            'STATE',
-            commands.prepare_key_value_message(name, value),
-            file_path=state_file,
-        )
-    else:
-        commands.issue_command(
-            command=WorkflowCommand.SAVE_STATE,
-            properties={'name': name},
-            message=value,
-        )
+    return os.getenv('RUNNER_DEBUG', '0') == '1'
 
 
 def debug(message: str) -> None:
@@ -378,61 +413,7 @@ def debug(message: str) -> None:
     --------
     >>> debug(message='Entering function X with params Y')
     """
-    commands.issue_command(command=WorkflowCommand.DEBUG, properties={}, message=message)
-
-
-def notice(message: str, *, properties: AnnotationProperties | None = None) -> None:
-    """
-    Write a notice message to log.
-
-    This function mirrors notice in core.ts. Notices create
-    annotations that are shown prominently in the UI.
-
-    Parameters
-    ----------
-    message : str
-        Notice message.
-    properties : Optional[AnnotationProperties]
-        Properties to control annotation appearance and location.
-
-    Examples
-    --------
-    >>> notice(message='Deployment completed successfully')
-
-    >>> notice(
-    ...     message='Configuration updated',
-    ...     properties=AnnotationProperties(title='Config Change', file='config.yaml', startLine=10),
-    ... )
-    """
-    cmd_properties = commands.to_command_properties(annotation_properties=properties or AnnotationProperties())
-    commands.issue_command(command=WorkflowCommand.NOTICE, properties=cmd_properties, message=message)
-
-
-def warning(message: StringOrException, *, properties: AnnotationProperties | None = None) -> None:
-    """
-    Write a warning message to log.
-
-    This function mirrors warning in core.ts. Warnings create
-    yellow annotations in the workflow summary.
-
-    Parameters
-    ----------
-    message : Union[str, Exception]
-        Warning message or exception.
-    properties : Optional[AnnotationProperties]
-        Properties to control annotation appearance and location.
-
-    Examples
-    --------
-    >>> warning(message='Deprecated function used')
-
-    >>> warning(
-    ...     message='Low disk space',
-    ...     properties=AnnotationProperties(title='Resource Warning', file='disk_check.py', startLine=45),
-    ... )
-    """
-    cmd_properties = commands.to_command_properties(annotation_properties=properties or AnnotationProperties())
-    commands.issue_command(command=WorkflowCommand.WARNING, properties=cmd_properties, message=str(message))
+    emit_command(GithubCommand.DEBUG, {}, message=message)
 
 
 def error(message: StringOrException, *, properties: AnnotationProperties | None = None) -> None:
@@ -460,11 +441,88 @@ def error(message: StringOrException, *, properties: AnnotationProperties | None
     ...         message=e, properties=AnnotationProperties(title='Processing Error', file='processor.py', startLine=102)
     ...     )
     """
-    cmd_properties = commands.to_command_properties(annotation_properties=properties or AnnotationProperties())
-    commands.issue_command(command=WorkflowCommand.ERROR, properties=cmd_properties, message=str(message))
+    props = properties or AnnotationProperties()
+    cmd_properties = utils.to_command_properties(
+        annotation_properties=props  # type: ignore
+    )
+    emit_command(
+        GithubCommand.ERROR,
+        properties=cmd_properties,
+        message=str(message)
+    )
 
 
-def start_group(*, name: str) -> None:
+def notice(message: str, *, properties: AnnotationProperties | None = None) -> None:
+    """
+    Write a notice message to log.
+
+    This function mirrors notice in core.ts. Notices create
+    annotations that are shown prominently in the UI.
+
+    Parameters
+    ----------
+    message : str
+        Notice message.
+    properties : Optional[AnnotationProperties]
+        Properties to control annotation appearance and location.
+
+    Examples
+    --------
+    >>> notice(message='Deployment completed successfully')
+
+    >>> notice(
+    ...     message='Configuration updated',
+    ...     properties=AnnotationProperties(title='Config Change', file='config.yaml', startLine=10),
+    ... )
+    """
+    props = properties or AnnotationProperties()
+    cmd_properties = utils.to_command_properties(
+        annotation_properties=props  # type: ignore
+    )
+    emit_command(
+        GithubCommand.NOTICE,
+        properties=cmd_properties,
+        message=message
+    )
+
+
+def warning(message: StringOrException, *, properties: AnnotationProperties | None = None) -> None:
+    """
+    Write a warning message to log.
+
+    This function mirrors warning in core.ts. Warnings create
+    yellow annotations in the workflow summary.
+
+    Parameters
+    ----------
+    message : Union[str, Exception]
+        Warning message or exception.
+    properties : Optional[AnnotationProperties]
+        Properties to control annotation appearance and location.
+
+    Examples
+    --------
+    >>> warning(message='Deprecated function used')
+
+    >>> warning(
+    ...     message='Low disk space',
+    ...     properties=AnnotationProperties(title='Resource Warning', file='disk_check.py', startLine=45),
+    ... )
+    """
+
+    props = properties or AnnotationProperties()
+    cmd_properties = utils.to_command_properties(
+        annotation_properties=props  # type: ignore
+    )
+
+    emit_command(
+        GithubCommand.WARNING,
+        properties=cmd_properties,
+        message=str(message)
+    )
+
+
+def start_group(name: str) -> None:
     """
     Begin an output group.
 
@@ -487,7 +545,7 @@ def start_group(*, name: str) -> None:
     >>> # ... build output ...
     >>> end_group()
     """
-    commands.issue(name=WorkflowCommand.GROUP, message=name)
+    emit(GithubCommand.GROUP, message=name)
 
 
 def end_group() -> None:
@@ -508,11 +566,11 @@ def end_group() -> None:
     >>> # ... test output ...
     >>> end_group()
     """
-    commands.issue(name=WorkflowCommand.ENDGROUP)
+    emit(GithubCommand.ENDGROUP)
 
 
 @contextmanager
-def group(*, name: str):
+def group(name: str):
     """
     Context manager for output groups.
 
@@ -535,8 +593,33 @@ def group(*, name: str):
     ...     # ... setup code ...
     ...     info(message='Environment ready')
     """
-    start_group(name=name)
+    start_group(name)
     try:
         yield
     finally:
         end_group()
+
+
+__all__ = [
+    'emit_command',
+    'emit',
+    'emit_file_command',
+    'export_variable',
+    'set_secret',
+    'add_path',
+    'get_input',
+    'get_multiline_input',
+    'get_boolean_input',
+    'set_output',
+    'set_echo',
+    'set_fail',
+    'is_debug',
+    'debug',
+    'error',
+    'notice',
+    'warning',
+    'start_group',
+    'end_group',
+    'group',
+    'AnnotationProperties'
+]

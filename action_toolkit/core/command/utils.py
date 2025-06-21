@@ -20,9 +20,6 @@ __all__ = [
 _COMMAND_SEP: Final[str] = '::'
 
 
-
-
-
 def _key_value_delimiter() -> str:
     '''
     the way to delimit key-value pairs for file commands,
@@ -215,6 +212,13 @@ def to_command_properties(annotation_properties: AnnotationProperties) -> dict[s
     return cmd_props
 
 
+def no_way_that_just_happened(delimiter: str) -> ValueError:
+    '''lol'''
+    return ValueError(
+        f'Key contains the delimiter "{delimiter}", which is not allowed.'
+        'How did this even happen?'
+    )
+    
 def prepare_key_value_message(
     key: str,
     value: CommandValue
@@ -234,18 +238,16 @@ def prepare_key_value_message(
     CommandValue
         The formatted key-value message.
     """
+    
     converted_value = to_command_value(value)
     delimiter = _key_value_delimiter()
+    
     if key in delimiter:
-        raise ValueError(
-            f'Key contains the delimiter "{delimiter}", which is not allowed.'
-            'How did this even happen?'
-        )
+        raise no_way_that_just_happened(delimiter)
+    
     if delimiter in converted_value:
-        raise ValueError(
-            f'Value contains the delimiter "{delimiter}", which is not allowed.'
-            'How did this even happen?'
-        )
+        raise no_way_that_just_happened(delimiter)
+    
     return f'{key}<<{delimiter}{os.linesep}{converted_value}{os.linesep}{delimiter}'
 
 

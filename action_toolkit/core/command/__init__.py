@@ -1,0 +1,48 @@
+from .command import (
+    emit_command,
+    emit,
+    emit_file_command,
+    export_variable,
+    set_secret,
+    add_path,
+    get_input,
+    get_multiline_input,
+    get_boolean_input,
+    set_output,
+    set_echo,
+    set_fail,
+    is_debug,
+    debug,
+    error,
+    notice,
+    warning,
+    start_group,
+    end_group,
+    group,
+    AnnotationProperties
+)
+
+
+__all__ = [
+    'emit_command',
+    'emit',
+    'emit_file_command',
+    'export_variable',
+    'set_secret',
+    'add_path',
+    'get_input',
+    'get_multiline_input',
+    'get_boolean_input',
+    'set_output',
+    'set_echo',
+    'set_fail',
+    'is_debug',
+    'debug',
+    'error',
+    'notice',
+    'warning',
+    'start_group',
+    'end_group',
+    'group',
+    'AnnotationProperties'
+]

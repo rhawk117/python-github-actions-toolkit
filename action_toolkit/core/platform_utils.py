@@ -2,7 +2,11 @@ import dataclasses
 import platform
 
 
-@dataclasses.dataclass(slots=True, frozen=True, kw_only=True)
+@dataclasses.dataclass(
+    slots=True,
+    frozen=True,
+    kw_only=True
+)
 class PlatformInfo:
     name: str
     version: str
@@ -34,3 +38,9 @@ def get_platform() -> PlatformInfo:
         version=platform.version(),
         arch=platform.machine()
     )
+
+
+__all__ = [
+    'PlatformInfo',
+    'get_platform'
+]
