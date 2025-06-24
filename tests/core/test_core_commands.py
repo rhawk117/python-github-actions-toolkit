@@ -8,6 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
+from action_toolkit.core.internals.interfaces import AnnotationProperties, WorkflowEnv
+
 from action_toolkit.core.command import (
     add_path,
     debug,
@@ -26,7 +28,6 @@ from action_toolkit.core.command import (
     start_group,
     warning,
 )
-from action_toolkit.core.internals.interfaces import AnnotationProperties, WorkflowEnv
 
 
 class TestSetOutput:

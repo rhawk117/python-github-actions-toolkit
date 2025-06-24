@@ -1,27 +1,26 @@
-'''
+"""
 **exec.main**
 
 Pythonic utility functions for executing commands with enhanced subprocess management,
 pipeline support, and GitHub Actions integration.
-'''
+"""
+
 from __future__ import annotations
 
 import asyncio
-from calendar import c
-from collections.abc import Generator
 import contextlib
 import os
 import selectors
 import shlex
-from sqlite3 import Time
 import subprocess
-import sys
+
+from collections.abc import Generator
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Any, overload
+from typing import IO, TYPE_CHECKING, Any
 
 from action_toolkit import core
 
-from .exceptions import CommandTimeoutError, ExecError, CommandNotFoundError, InvalidCommandError
+from .exceptions import CommandNotFoundError, CommandTimeoutError, ExecError, InvalidCommandError
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
@@ -31,91 +30,81 @@ if TYPE_CHECKING:
 
 
 class ProcessResult:
-    '''
+    """
     Enhanced wrapper around subprocess.CompletedProcess with additional utilities.
 
     Provides a more Pythonic interface with properties for common operations
     and pipeline support.
-    '''
+    """
 
-    def __init__(
-        self,
-        *,
-        completed_process: CompletedProcess[str],
-        command: str | list[str]
-    ) -> None:
-        '''
+    def __init__(self, *, completed_process: CompletedProcess[str], command: str | list[str]) -> None:
+        """
         Parameters
         ----------
         completed_process : CompletedProcess[str]
             The completed process from subprocess.
         command : str | list[str]
             The original command that was executed.
-        '''
+        """
         self._process = completed_process
         self._command = command if isinstance(command, str) else shlex.join(command)
 
     @property
     def completed_process(self) -> CompletedProcess[str]:
-        '''The underlying subprocess.CompletedProcess object.'''
+        """The underlying subprocess.CompletedProcess object."""
         return self._process
 
     @property
     def returncode(self) -> int:
-        '''Process return code.'''
+        """Process return code."""
         return self._process.returncode
 
     @property
     def stdout(self) -> str:
-        '''Standard output as string.'''
+        """Standard output as string."""
         return self._process.stdout or ''
 
     @property
     def stderr(self) -> str:
-        '''Standard error as string.'''
+        """Standard error as string."""
         return self._process.stderr or ''
 
     @property
     def success(self) -> bool:
-        '''True if the process completed successfully (returncode == 0).'''
+        """True if the process completed successfully (returncode == 0)."""
         return self.returncode == 0
 
     @property
     def failed(self) -> bool:
-        '''True if the process failed (returncode != 0).'''
+        """True if the process failed (returncode != 0)."""
         return not self.success
 
     @property
     def command(self) -> str:
-        '''The command that was executed.'''
+        """The command that was executed."""
         return self._command
 
     @property
     def stdout_lines(self) -> list[str]:
-        '''Stdout split into lines (strips trailing newline).'''
+        """Stdout split into lines (strips trailing newline)."""
         return self.stdout.rstrip('\n').split('\n') if self.stdout else []
 
     @property
     def stderr_lines(self) -> list[str]:
-        '''Stderr split into lines (strips trailing newline).'''
+        """Stderr split into lines (strips trailing newline)."""
         return self.stderr.rstrip('\n').split('\n') if self.stderr else []
 
     def check_returncode(self) -> None:
-        '''
+        """
         Raise ExecError if the process failed.
 
         Raises
         ------
         ExecError
             If returncode is non-zero.
-        '''
+        """
         if self.failed:
-            raise ExecError(
-                command=self.command,
-                exit_code=self.returncode,
-                stdout=self.stdout,
-                stderr=self.stderr
-            )
+            raise ExecError(command=self.command, exit_code=self.returncode, stdout=self.stdout, stderr=self.stderr)
 
     def __repr__(self) -> str:
         return (
@@ -126,7 +115,7 @@ class ProcessResult:
         )
 
     def pipe_to(self, *command: str, **options: Any) -> 'ProcessResult':
-        '''
+        """
         Pipe stdout to another command.
 
         Parameters
@@ -145,17 +134,14 @@ class ProcessResult:
         --------
         >>> result = run('ls', '-la').pipe_to('grep', 'python')
         >>> result = run('cat', 'file.txt').pipe_to('wc', '-l')
-        '''
+        """
         if 'input' in options:
             raise ValueError("Cannot specify 'input' when piping")
 
         return run(*command, input=self.stdout, **options)
 
 
-def prepare_command(
-    command: Sequence[str],
-    shell: bool
-) -> tuple[str | list[str], str]:
+def prepare_command(command: Sequence[str], shell: bool) -> tuple[str | list[str], str]:
     if shell:
         cmd = ' '.join(command) if len(command) > 1 else command[0]
     else:
@@ -163,9 +149,9 @@ def prepare_command(
     cmd_str = cmd if isinstance(cmd, str) else shlex.join(cmd)
     return cmd, cmd_str
 
+
 def prepare_command_context(
-    env: Mapping[str, str] | None,
-    cwd: StringOrPathlib | None
+    env: Mapping[str, str] | None, cwd: StringOrPathlib | None
 ) -> tuple[Mapping[str, str] | None, str | None]:
     if env is not None:
         process_env = dict(os.environ)
@@ -174,6 +160,7 @@ def prepare_command_context(
         process_env = None
     cwd_str = str(Path(cwd)) if cwd is not None else None
     return process_env, cwd_str
+
 
 class CommandExecutor:
     """
@@ -193,7 +180,7 @@ class CommandExecutor:
         encoding: str = 'utf-8',
         silent: bool = False,
         dry_run: bool = False,
-        **kwargs: dict[str, Any]
+        **kwargs: dict[str, Any],
     ) -> None:
         if not self.command:
             raise InvalidCommandError(command)
@@ -227,7 +214,6 @@ class CommandExecutor:
             return self.shell_command
         return shlex.join(self.command)
 
-
     def set_environment(self, process_env: Mapping[str, str]) -> None:
         """
         Returns the environment variables for the subprocess.
@@ -235,8 +221,6 @@ class CommandExecutor:
         """
         if not self.env:
             return
-        
-
 
     def dry_run(self) -> ProcessResult:
         """
@@ -246,20 +230,10 @@ class CommandExecutor:
         cmd_str = self.command_string()
         if not self.silent:
             core.debug(f'[DRY RUN] Would execute: {cmd_str}')
-        completed = subprocess.CompletedProcess(
-            args=self.command,
-            returncode=0,
-            stdout='',
-            stderr=''
-        )
-        return ProcessResult(
-            completed_process=completed,
-            command=self.command
-        )
+        completed = subprocess.CompletedProcess(args=self.command, returncode=0, stdout='', stderr='')
+        return ProcessResult(completed_process=completed, command=self.command)
 
     def run(self) -> ProcessResult:
-
-
         process_env, cwd_str = self._prepare_context(env, cwd)
         try:
             completed = subprocess.run(
@@ -273,12 +247,9 @@ class CommandExecutor:
                 encoding=encoding,
                 shell=shell,
                 check=False,
-                **kwargs
+                **kwargs,
             )
-            result = ProcessResult(
-                completed_process=completed,
-                command=cmd
-            )
+            result = ProcessResult(completed_process=completed, command=cmd)
 
             self._log_result(result, silent)
             if check:
@@ -286,15 +257,10 @@ class CommandExecutor:
 
             return result
 
-        except subprocess.TimeoutExpired as e:
-            raise TimeoutError(
-                f'Command "{cmd_str}" timed out after {timeout} seconds'
-            )
+        except subprocess.TimeoutExpired:
+            raise TimeoutError(f'Command "{cmd_str}" timed out after {timeout} seconds')
         except FileNotFoundError as e:
-            raise CommandNotFoundError(
-                command=cmd_str,
-                message=f'Command not found: {command[0]}'
-            ) from e
+            raise CommandNotFoundError(command=cmd_str, message=f'Command not found: {command[0]}') from e
 
     def stream(
         self,
@@ -305,10 +271,10 @@ class CommandExecutor:
         shell: bool = False,
         encoding: str = 'utf-8',
         silent: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Iterator[tuple[str, str]]:
         if not command:
-            raise ValueError("At least one command argument is required")
+            raise ValueError('At least one command argument is required')
         cmd, cmd_str = self.prepare_command(d, shell)
         if not silent:
             core.debug(f'streaming {cmd_str}')
@@ -324,7 +290,7 @@ class CommandExecutor:
                 text=True,
                 encoding=encoding,
                 shell=shell,
-                **kwargs
+                **kwargs,
             ) as process:
                 sel = selectors.DefaultSelector()
                 if process.stdout:
@@ -346,30 +312,14 @@ class CommandExecutor:
                         yield (stream_name, line)
 
                 if process.stdout:
-                    yield from self._generate_io_stream(
-                        process.stdout,
-                        silent,
-                        'stdout'
-                    )
+                    yield from self._generate_io_stream(process.stdout, silent, 'stdout')
                 if process.stderr:
-                    yield from self._generate_io_stream(
-                        process.stderr,
-                        silent,
-                        'stderr'
-                    )
+                    yield from self._generate_io_stream(process.stderr, silent, 'stderr')
 
         except FileNotFoundError as e:
-            raise CommandNotFoundError(
-                command=cmd_str,
-                message=f'Command not found: {command[0]}'
-            ) from e
+            raise CommandNotFoundError(command=cmd_str, message=f'Command not found: {command[0]}') from e
 
-    def _generate_io_stream(
-        self,
-        proc_io: IO[str],
-        silent: bool,
-        stream_name: str
-    ) -> Iterator[tuple[str, str]]:
+    def _generate_io_stream(self, proc_io: IO[str], silent: bool, stream_name: str) -> Iterator[tuple[str, str]]:
         """
         Generator to yield lines from a process IO stream.
         """
@@ -378,6 +328,7 @@ class CommandExecutor:
             if not silent:
                 core.debug(f'[{stream_name}] {line}')
             yield (stream_name, line)
+
 
 class AsyncCommandExecutor:
     """
@@ -401,10 +352,10 @@ class AsyncCommandExecutor:
         shell: bool = False,
         encoding: str = 'utf-8',
         silent: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> ProcessResult:
         if not command:
-            raise ValueError("At least one command argument is required")
+            raise ValueError('At least one command argument is required')
         cmd, cmd_str = self.prepare_command(d, shell)
         if not silent:
             core.debug(f'Executing async: {cmd_str}')
@@ -420,21 +371,15 @@ class AsyncCommandExecutor:
                 stdin=asyncio.subprocess.PIPE if input else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                **kwargs
+                **kwargs,
             )
             input_bytes = input.encode(encoding) if isinstance(input, str) else input
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                process.communicate(input_bytes),
-                timeout=timeout
-            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(process.communicate(input_bytes), timeout=timeout)
             stdout = stdout_bytes.decode(encoding) if stdout_bytes else ''
             stderr = stderr_bytes.decode(encoding) if stderr_bytes else ''
 
             completed = subprocess.CompletedProcess(
-                args=cmd,
-                returncode=process.returncode or 0,
-                stdout=stdout,
-                stderr=stderr
+                args=cmd, returncode=process.returncode or 0, stdout=stdout, stderr=stderr
             )
             result = ProcessResult(completed_process=completed, command=cmd)
             CommandExecutor()._log_result(result, silent)
@@ -445,15 +390,9 @@ class AsyncCommandExecutor:
         except asyncio.TimeoutError as e:
             process.terminate()
             await process.wait()
-            raise CommandTimeoutError(
-                command=cmd_str,
-                timeout=timeout
-            ) from e
+            raise CommandTimeoutError(command=cmd_str, timeout=timeout) from e
         except FileNotFoundError as e:
-            raise CommandNotFoundError(
-                command=cmd_str,
-                message=f'Command not found: {command[0]}'
-            ) from e
+            raise CommandNotFoundError(command=cmd_str, message=f'Command not found: {command[0]}') from e
 
     async def stream_async(
         self,
@@ -463,10 +402,10 @@ class AsyncCommandExecutor:
         shell: bool = False,
         encoding: str = 'utf-8',
         silent: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> AsyncIterator[tuple[str, str]]:
         if not command:
-            raise ValueError("At least one command argument is required")
+            raise ValueError('At least one command argument is required')
         cmd, cmd_str = self.prepare_command(d, shell)
         if not silent:
             core.debug(f'Streaming async: {cmd_str}')
@@ -481,7 +420,7 @@ class AsyncCommandExecutor:
                 env=process_env,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                **kwargs
+                **kwargs,
             )
 
             async def read_stream(stream, name):
@@ -500,10 +439,7 @@ class AsyncCommandExecutor:
             await process.wait()
 
         except FileNotFoundError as e:
-            raise CommandNotFoundError(
-                command=cmd_str,
-                message=f'Command not found: {command[0]}'
-            ) from e
+            raise CommandNotFoundError(command=cmd_str, message=f'Command not found: {command[0]}') from e
 
     async def _merge_async_iterators(self, *iterators):
         tasks = {asyncio.create_task(self._anext_safe(it)): it for it in iterators}
@@ -530,6 +466,7 @@ _sync_executor = CommandExecutor()
 _async_executor = AsyncCommandExecutor()
 
 # Module-level API unchanged
+
 
 def run(*args: Any, **kwargs: Any) -> ProcessResult:
     return _sync_executor.run(*args, **kwargs)
@@ -562,7 +499,7 @@ def check_output(*command: str, **kwargs: Any) -> str:
 
 def pipeline(*commands: Sequence[str], **kwargs: Any) -> ProcessResult:
     if not commands:
-        raise ValueError("At least one command is required")
+        raise ValueError('At least one command is required')
     result = run(*commands[0], **kwargs)
     for cmd in commands[1:]:
         result = result.pipe_to(*cmd, **kwargs)
@@ -570,7 +507,6 @@ def pipeline(*commands: Sequence[str], **kwargs: Any) -> ProcessResult:
 
 
 @contextlib.contextmanager
-
 def cd(path: StringOrPathlib) -> Generator[None, None, None]:
     old_cwd = os.getcwd()
     os.chdir(path)
@@ -581,7 +517,6 @@ def cd(path: StringOrPathlib) -> Generator[None, None, None]:
 
 
 @contextlib.contextmanager
-
 def environment(**env_vars: str) -> Generator[None, None, None]:
     old_env = {}
     for key, value in env_vars.items():

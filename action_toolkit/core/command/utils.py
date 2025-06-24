@@ -1,27 +1,21 @@
-
 from __future__ import annotations
+
+import dataclasses
 import json
 import os
+
 from typing import TYPE_CHECKING, Any, Final
-from action_toolkit.corelib.utils import dataclass_utils
 
 if TYPE_CHECKING:
-    from .models import (
-        CommandPropertyValue, CommandValue, AnnotationProperties, Command
-    )
+    from .models import AnnotationProperties, Command, CommandPropertyValue, CommandValue
 
-__all__ = [
-    'get_command_string',
-    'to_command_value',
-    'to_command_properties',
-    'prepare_key_value_message'
-]
+__all__ = ['get_command_string', 'to_command_value', 'to_command_properties', 'prepare_key_value_message']
 
 _COMMAND_SEP: Final[str] = '::'
 
 
 def _key_value_delimiter() -> str:
-    '''
+    """
     the way to delimit key-value pairs for file commands,
     in own function if this ever is updated and mirrors
     the TypeScript implementation
@@ -30,7 +24,7 @@ def _key_value_delimiter() -> str:
     -------
     str
         _the key value delimiter_
-    '''
+    """
     return f'ghadelimiter_{os.urandom(16).hex()}'
 
 
@@ -57,11 +51,7 @@ def _escape_data(s: Any) -> str:
         - \\r -> %0D
         - \\n -> %0A
     """
-    return _replace_list(to_command_value(input=s), [
-        ('%', '%25'),
-        ('\r', '%0D'),
-        ('\n', '%0A')
-    ])
+    return _replace_list(to_command_value(input=s), [('%', '%25'), ('\r', '%0D'), ('\n', '%0A')])
 
 
 def _escape_prop(s: Any) -> str:
@@ -91,13 +81,9 @@ def _escape_prop(s: Any) -> str:
     >>> escape_property('item1,item2')
     'item1%2Citem2'
     """
-    return _replace_list(to_command_value(input=s), [
-        ('%', '%25'),
-        ('\r', '%0D'),
-        ('\n', '%0A'),
-        (':', '%3A'),
-        (',', '%2C')
-    ])
+    return _replace_list(
+        to_command_value(input=s), [('%', '%25'), ('\r', '%0D'), ('\n', '%0A'), (':', '%3A'), (',', '%2C')]
+    )
 
 
 def _stringify_cmd_props(properties: dict[str, CommandPropertyValue]) -> str:
@@ -125,7 +111,7 @@ def _stringify_cmd_props(properties: dict[str, CommandPropertyValue]) -> str:
 
 
 def get_command_string(cmd: Command) -> str:
-    '''
+    """
     Converts a Command object to a string
     that is escaped, formatted and ready
     to be emitted to standard output stream
@@ -139,7 +125,7 @@ def get_command_string(cmd: Command) -> str:
     -------
     str
         _the prepared command string_
-    '''
+    """
     cmd_string = f'{cmd.command.value}{_COMMAND_SEP}'
     if cmd.properties:
         prop_string = _stringify_cmd_props(cmd.properties)
@@ -181,7 +167,7 @@ def to_command_value(input: CommandValue) -> str:
 
 
 def to_command_properties(annotation_properties: AnnotationProperties) -> dict[str, CommandPropertyValue]:
-    '''
+    """
     Converts an AnnotationProperties object to a dictionary of command properties
     and renames the `startLine` and `startColumn` properties to `line` and `col`
 
@@ -194,35 +180,28 @@ def to_command_properties(annotation_properties: AnnotationProperties) -> dict[s
     -------
     dict[str, CommandPropertyValue]
         _the normalized dictionary_
-    '''
+    """
     # 'startLine', # should be mapped to 'line'
     # 'startColumn', # should be mapped to 'col'
-    cmd_props = dataclass_utils.dump_dataclass(
-        annotation_properties,
-        exclude_none=True,
-        exclude={'startLine', 'startColumn'}
+    cmd_props = dict(
+        filter(lambda items: items[1] is not None or items[1] != '', dataclasses.asdict(annotation_properties).items())
     )
 
-    if annotation_properties.startLine is not None:
-        cmd_props['line'] = annotation_properties.startLine
+    if start_line := cmd_props.pop('startLine', None):
+        cmd_props['line'] = start_line
 
-    if annotation_properties.startColumn is not None:
-        cmd_props['col'] = annotation_properties.startColumn
+    if start_col := cmd_props.pop('startColumn', None):
+        cmd_props['col'] = start_col
 
     return cmd_props
 
 
 def no_way_that_just_happened(delimiter: str) -> ValueError:
-    '''lol'''
-    return ValueError(
-        f'Key contains the delimiter "{delimiter}", which is not allowed.'
-        'How did this even happen?'
-    )
-    
-def prepare_key_value_message(
-    key: str,
-    value: CommandValue
-) -> CommandValue:
+    """lol"""
+    return ValueError(f'Key contains the delimiter "{delimiter}", which is not allowed.How did this even happen?')
+
+
+def prepare_key_value_message(key: str, value: CommandValue) -> CommandValue:
     """
     Prepares a key-value message for command properties.
 
@@ -238,16 +217,14 @@ def prepare_key_value_message(
     CommandValue
         The formatted key-value message.
     """
-    
+
     converted_value = to_command_value(value)
     delimiter = _key_value_delimiter()
-    
+
     if key in delimiter:
         raise no_way_that_just_happened(delimiter)
-    
+
     if delimiter in converted_value:
         raise no_way_that_just_happened(delimiter)
-    
+
     return f'{key}<<{delimiter}{os.linesep}{converted_value}{os.linesep}{delimiter}'
-
-

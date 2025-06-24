@@ -11,20 +11,14 @@ https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import sys
 
 from contextlib import contextmanager
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from . import utils
-from .models import (
-    GithubCommand,
-    CommandPropertyValue,
-    CommandValue,
-    Command,
-    AnnotationProperties
-)
+from .models import AnnotationProperties, Command, CommandPropertyValue, CommandValue, GithubCommand
 
 if TYPE_CHECKING:
     from action_toolkit.corelib.types.core import StringOrException
@@ -36,18 +30,14 @@ BOOLEAN_FALSE = frozenset(['false', 'no', 'off', 'n', '0'])
 
 
 def emit_command(
-    name: GithubCommand,
-    properties: dict[str, CommandPropertyValue] | None | str = None,
-    *,
-    message: CommandValue
+    name: GithubCommand, properties: dict[str, CommandPropertyValue] | None | str = None, *, message: CommandValue
 ) -> None:
-
     properties = properties or {}
 
     cmd = Command(
         command=name,
         properties=properties,  # type: ignore[assignment]
-        message=message
+        message=message,
     )
 
     emittable_string = utils.get_command_string(cmd)
@@ -145,11 +135,7 @@ def export_variable(name: str, value: IOValue) -> None:
             utils.prepare_key_value_message(name, var_value),
         )
 
-    emit_command(
-        GithubCommand.SET_ENV,
-        {'name': name},
-        message=var_value
-    )
+    emit_command(GithubCommand.SET_ENV, {'name': name}, message=var_value)
 
 
 def set_secret(secret: str) -> None:
@@ -171,10 +157,7 @@ def set_secret(secret: str) -> None:
     >>> set_secret(secret={'apiKey': 'secret-key'})  # JSON serialized
     """
     try:
-        emit_command(
-            GithubCommand.ADD_MASK,
-            message=secret
-        )
+        emit_command(GithubCommand.ADD_MASK, message=secret)
     except Exception as e:
         raise RuntimeError(
             'Could not set secret. This may be due to an invalid value or an issue with the environment.'
@@ -188,25 +171,17 @@ def add_path(path: StringOrPathlib) -> None:
     else:
         emit_command(GithubCommand.ADD_PATH, message=str(path))
 
-    appended_paths = f'{path}{os.pathsep}{os.getenv('PATH', '')}'
+    appended_paths = f'{path}{os.pathsep}{os.getenv("PATH", "")}'
     os.environ['PATH'] = appended_paths
 
 
-def get_input(
-    name: str,
-    *,
-    required: bool = False,
-    trim_whitespace: bool = True
-) -> str:
-
+def get_input(name: str, *, required: bool = False, trim_whitespace: bool = True) -> str:
     input_environ = f'INPUT_{name.upper()}'.replace('-', '_').upper()
 
     input = os.environ.get(input_environ, '')
 
     if not input and required:
-        raise ValueError(
-            f'Input required and not supplied: {name}'
-        )
+        raise ValueError(f'Input required and not supplied: {name}')
 
     if not trim_whitespace:
         return input
@@ -214,31 +189,14 @@ def get_input(
     return input.strip()
 
 
-def get_multiline_input(
-    name: str,
-    *,
-    required: bool = False,
-    trim_whitespace: bool = True
-) -> list[str]:
-    inputs = get_input(
-        name,
-        required=required,
-        trim_whitespace=trim_whitespace
-    )
-    input_lines = filter(
-        lambda x: x.strip() != '',
-        inputs.split('\n')
-    )
+def get_multiline_input(name: str, *, required: bool = False, trim_whitespace: bool = True) -> list[str]:
+    inputs = get_input(name, required=required, trim_whitespace=trim_whitespace)
+    input_lines = filter(lambda x: x.strip() != '', inputs.split('\n'))
 
     return [input_lines.strip() for input_lines in input_lines]
 
 
-def get_boolean_input(
-    name: str,
-    *,
-    required: bool = False,
-    trim_whitespace: bool = True
-) -> bool:
+def get_boolean_input(name: str, *, required: bool = False, trim_whitespace: bool = True) -> bool:
     """
     Get a boolean input value from the environment.
 
@@ -270,18 +228,14 @@ def get_boolean_input(
     >>> is_enabled = get_boolean_input('enable_feature', required=True)
     """
 
-    input_value = get_input(
-        name,
-        required=required,
-        trim_whitespace=trim_whitespace
-    ).lower()
+    input_value = get_input(name, required=required, trim_whitespace=trim_whitespace).lower()
 
     if not input_value and not required:
         return False
 
     in_bool_true = input_value in BOOLEAN_TRUE
 
-    if not in_bool_true or not input_value in BOOLEAN_FALSE:
+    if not in_bool_true or input_value not in BOOLEAN_FALSE:
         raise ValueError(f'Invalid boolean input for {name}: {input_value}')
 
     return in_bool_true
@@ -314,16 +268,10 @@ def set_output(name: str, value: IOValue) -> None:
     """
 
     if environ_contains('GITHUB_OUTPUT'):
-        return emit_file_command(
-            'OUTPUT',
-            utils.prepare_key_value_message(name, value)
-        )
+        return emit_file_command('OUTPUT', utils.prepare_key_value_message(name, value))
 
     sys.stdout.write(os.linesep)
-    emit_command(
-        name=GithubCommand.SET_OUTPUT,
-        message=utils.prepare_key_value_message(name, value)
-    )
+    emit_command(name=GithubCommand.SET_OUTPUT, message=utils.prepare_key_value_message(name, value))
 
 
 def set_echo(enabled: bool) -> None:
@@ -374,7 +322,7 @@ def set_fail(message: str | Exception) -> None:
     ...     set_failed(message=e)
     """
     error(message=str(message))
-    sys.exit(ExitCode.Failure)
+    sys.exit(1)
 
 
 def is_debug() -> bool:
@@ -445,11 +393,7 @@ def error(message: StringOrException, *, properties: AnnotationProperties | None
     cmd_properties = utils.to_command_properties(
         annotation_properties=props  # type: ignore
     )
-    emit_command(
-        GithubCommand.ERROR,
-        properties=cmd_properties,
-        message=str(message)
-    )
+    emit_command(GithubCommand.ERROR, properties=cmd_properties, message=str(message))
 
 
 def notice(message: str, *, properties: AnnotationProperties | None = None) -> None:
@@ -479,11 +423,7 @@ def notice(message: str, *, properties: AnnotationProperties | None = None) -> N
     cmd_properties = utils.to_command_properties(
         annotation_properties=props  # type: ignore
     )
-    emit_command(
-        GithubCommand.NOTICE,
-        properties=cmd_properties,
-        message=message
-    )
+    emit_command(GithubCommand.NOTICE, properties=cmd_properties, message=message)
 
 
 def warning(message: StringOrException, *, properties: AnnotationProperties | None = None) -> None:
@@ -515,11 +455,7 @@ def warning(message: StringOrException, *, properties: AnnotationProperties | No
         annotation_properties=props  # type: ignore
     )
 
-    emit_command(
-        GithubCommand.WARNING,
-        properties=cmd_properties,
-        message=str(message)
-    )
+    emit_command(GithubCommand.WARNING, properties=cmd_properties, message=str(message))
 
 
 def start_group(name: str) -> None:
@@ -600,6 +536,18 @@ def group(name: str):
         end_group()
 
 
+def save_state(name: str, value: IOValue) -> None:
+    file_path = os.getenv('GITHUB_STATE')
+    if file_path:
+        return emit_file_command('STATE', utils.prepare_key_value_message(name, value))
+
+    emit_command(GithubCommand.SAVE_STATE, {'name': name}, message=utils.to_command_value(value))
+
+
+def get_state(name: str) -> str:
+    return os.getenv(f'STATE_{name.upper()}', '')
+
+
 __all__ = [
     'emit_command',
     'emit',
@@ -621,5 +569,7 @@ __all__ = [
     'start_group',
     'end_group',
     'group',
-    'AnnotationProperties'
+    'AnnotationProperties',
+    'save_state',
+    'get_state',
 ]

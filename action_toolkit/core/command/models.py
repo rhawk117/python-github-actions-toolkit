@@ -1,9 +1,8 @@
-
+import dataclasses
 
 from enum import StrEnum
 from typing import TypeAlias
 
-import dataclasses
 from .exceptions import AnnotationError
 
 CommandPropertyValue: TypeAlias = str | int | float | bool | None
@@ -84,11 +83,10 @@ class AnnotationProperties:
 
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class Command:
-    '''
+    """
     Represents an emittable Github Actions command.
-    '''
+    """
+
     command: GithubCommand
-    properties: dict[str, CommandPropertyValue] = dataclasses.field(
-        default_factory=dict
-    )
+    properties: dict[str, CommandPropertyValue] = dataclasses.field(default_factory=dict)
     message: CommandValue

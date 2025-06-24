@@ -2,11 +2,7 @@ import dataclasses
 import platform
 
 
-@dataclasses.dataclass(
-    slots=True,
-    frozen=True,
-    kw_only=True
-)
+@dataclasses.dataclass(slots=True, frozen=True, kw_only=True)
 class PlatformInfo:
     name: str
     version: str
@@ -33,14 +29,7 @@ def get_platform() -> PlatformInfo:
     PlatformInfo
         _metadata about the platform of the runner_
     """
-    return PlatformInfo(
-        name=platform.system(),
-        version=platform.version(),
-        arch=platform.machine()
-    )
+    return PlatformInfo(name=platform.system(), version=platform.version(), arch=platform.machine())
 
 
-__all__ = [
-    'PlatformInfo',
-    'get_platform'
-]
+__all__ = ['PlatformInfo', 'get_platform']

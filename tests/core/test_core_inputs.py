@@ -6,8 +6,9 @@ from unittest.mock import patch
 
 import pytest
 
-from action_toolkit.core import inputs
 from action_toolkit.core.exceptions import InputError
+
+from action_toolkit.core import inputs
 
 
 class TestGetInput:

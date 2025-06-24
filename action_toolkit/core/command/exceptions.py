@@ -39,8 +39,8 @@ class AnnotationError(CommandsError):
 
     pass
 
-class EnvironError(Exception):
 
+class EnvironError(Exception):
     def __init__(self, message: str) -> None:
         """
         Initialize the EnvironError.

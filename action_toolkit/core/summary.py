@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
+
 from pathlib import Path
 from typing import Final, Self
 
@@ -40,18 +41,16 @@ def resolve_summary_path() -> Path:
         path.read_text()
     except Exception:
         raise RuntimeError(
-            f'Failed to read summary file at {path}. '
-            'Ensure the file exists and is accessible.'
-        )
+            f'Failed to read summary file at {path}. Ensure the file exists and is accessible.')
 
     return path
 
 
 class Summary:
-    '''
+    """
     Almost identical to the TypeScript implementation for the time being,
     definitely not fully implemented or the most "pythonic" way to do this.
-    '''
+    """
 
     def __init__(self, overwrite: bool = False) -> None:
         """Initialize the summary with an empty StringIO buffer."""
@@ -59,18 +58,11 @@ class Summary:
         self._file_path: Path = resolve_summary_path()
         self._overwrite = overwrite
 
-    def _wrap(
-        self,
-        tag: str,
-        content: str | None,
-        attrs: dict[str, str] = {}
-    ) -> str:
+    def _wrap(self, tag: str, content: str | None, attrs: dict[str, str] = {}) -> str:
         """Wrap content in a markdown tag."""
         if content is None:
             return ''
-        html_attrs = ' '.join(
-            f'{k}="{v}"' for k, v in attrs.items() if v
-        )
+        html_attrs = ' '.join(f'{k}="{v}"' for k, v in attrs.items() if v)
         if not content:
             return f'<{tag} {html_attrs}>'
 
@@ -138,10 +130,7 @@ class Summary:
 
             elif isinstance(row, SummaryTableRow):
                 tag = 'th' if row.header else 'td'
-                attrs = {
-                    'colspan': row.colspan,
-                    'rowspan': row.rowspan
-                }
+                attrs = {'colspan': row.colspan, 'rowspan': row.rowspan}
                 content = self._wrap(tag, row.data, attrs)
                 tags.append(self._wrap('tr', content))
 
@@ -172,10 +161,7 @@ class Summary:
         self,
     ) -> Self:
         """Add a horizontal rule or separator to the summary."""
-        return self.append_text(
-            '<hr />',
-            add_sep=True
-        )
+        return self.append_text('<hr />', add_sep=True)
 
     def add_break(
         self,
@@ -183,11 +169,7 @@ class Summary:
         """Add a line break to the summary."""
         return self.append_text('<br />', add_sep=True)
 
-    def add_quote(
-        self,
-        text: str,
-        cite: str | None = None
-    ) -> Self:
+    def add_quote(self, text: str, cite: str | None = None) -> Self:
         """Add a blockquote to the summary."""
         attrs = {}
         if cite:
@@ -195,19 +177,9 @@ class Summary:
 
         return self.append_text(self._wrap('blockquote', text, attrs), add_sep=True)
 
-    def add_link(
-        self,
-        text: str,
-        url: str
-    ) -> Self:
+    def add_link(self, text: str, url: str) -> Self:
         """Add a hyperlink to the summary."""
-        return self.append_text(
-            self._wrap('a', text, {'href': url}),
-            add_sep=True
-        )
+        return self.append_text(self._wrap('a', text, {'href': url}), add_sep=True)
 
 
-__all__ = [
-    'Summary',
-    'SummaryTableRow'
-]
+__all__ = ['Summary', 'SummaryTableRow']
